@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower
+  namespace: tataredu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower
+  template:
+    metadata:
+      labels:
+        app: flower
+    spec:
+      containers:
+        - name: flower
+          image: backend:latest
+          imagePullPolicy: Never
+          command: ["celery", "-A", "tatarlang.celery", "flower", "--port=5555", "--address=0.0.0.0"]
+          ports:
+            - containerPort: 5555
+          env:
+            - name: FLOWER_PORT
+              value: "5555"
+            - name: FLOWER_BIND_ADDRESS
+              value: "0.0.0.0"
+            - name: CELERY_BROKER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: CELERY_BROKER_URL
+          envFrom:
+            - secretRef:
+                name: app-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower
+  namespace: tataredu
+spec:
+  selector:
+    app: flower
+  ports:
+    - port: 5555
+      targetPort: 5555

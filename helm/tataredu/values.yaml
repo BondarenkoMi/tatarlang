@@ -1,0 +1,127 @@
+# Default values for tataredu
+# This is a YAML-formatted file.
+
+# Global settings
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: tataredu
+
+# ServiceAccount
+serviceAccount:
+  create: false
+  name: ""
+
+# Backend configuration
+backend:
+  enabled: true
+  image:
+    repository: backend
+    tag: latest
+    pullPolicy: Never
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 8000
+
+# Frontend configuration
+frontend:
+  enabled: true
+  image:
+    repository: frontend
+    tag: latest
+    pullPolicy: Never
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+
+# PostgreSQL configuration
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15"
+  storage:
+    size: 1Gi
+    storageClass: ""
+  persistence:
+    enabled: true
+  # External PostgreSQL (if enabled=false)
+  externalHost: ""
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  image:
+    repository: rabbitmq
+    tag: "3-management"
+  # External RabbitMQ (if enabled=false)
+  externalHost: ""
+
+# Celery configuration
+celery:
+  worker:
+    enabled: true
+    replicas: 1
+  beat:
+    enabled: true
+    replicas: 1
+  flower:
+    enabled: true
+    replicas: 1
+    service:
+      type: ClusterIP
+      port: 5555
+
+# ConfigMap values
+config:
+  postgres:
+    db: tatarlang
+    user: postgres
+    host: postgres
+    port: "5432"
+  rabbitmq:
+    user: admin
+  reactAppApiUrl: "http://backend:8000/api/v1"
+  celeryBrokerUrl: "amqp://admin:admin@rabbitmq:5672//"
+
+# Secret values (plain text, will be base64 encoded)
+secrets:
+  postgresPassword: "postgres"
+  rabbitmqPassword: "admin"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: tataredu.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: backend
+          port: 8000
+  tls: []
+    # - secretName: tataredu-tls
+    #   hosts:
+    #     - tataredu.local
+
+# Migration Job
+migration:
+  enabled: true
+
+# CronJob configuration
+cronjob:
+  clearsessions:
+    enabled: true
+    schedule: "0 3 * * *"  # каждый день в 03:00
+
+

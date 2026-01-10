@@ -1,0 +1,6 @@
+.env
+*.tgz
+charts/
+*.lock
+/tmp/
+

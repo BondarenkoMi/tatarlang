@@ -1,0 +1,29 @@
+{{- if .Values.cronjob.clearsessions.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backend-clearsessions
+  namespace: {{ .Values.namespace }}
+spec:
+  schedule: {{ .Values.cronjob.clearsessions.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backend-clearsessions
+              image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+              imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+              command: ["python", "manage.py", "clearsessions"]
+              envFrom:
+                - configMapRef:
+                    name: app-config
+                - secretRef:
+                    name: app-secret
+{{- end }}
+
+

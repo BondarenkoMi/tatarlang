@@ -1,0 +1,18 @@
+apiVersion: v2
+name: tataredu
+description: A Helm chart for Tataredu application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - tataredu
+  - django
+  - react
+  - postgresql
+  - rabbitmq
+home: https://github.com/your-org/tataredu
+sources:
+  - https://github.com/your-org/tataredu
+maintainers:
+  - name: Tataredu Team
+dependencies: []

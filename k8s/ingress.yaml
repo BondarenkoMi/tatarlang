@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tataredu-ingress
+  namespace: tataredu
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+
+  ingressClassName: nginx
+  # TLS отключен для локальной разработки (заглушка не работает)
+  # Для продакшена раскомментируйте и настройте реальный сертификат
+  # tls:
+  #   - hosts:
+  #       - tataredu.local
+  #     secretName: tataredu-tls
+  rules:
+    - host: tataredu.test
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+
