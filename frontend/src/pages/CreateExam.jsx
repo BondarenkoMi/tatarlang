@@ -115,7 +115,7 @@ export default function CreateExam() {
                     choices: q.choices.filter(c => c.text).map(c => ({ text: c.text, is_correct: !!c.is_correct })),
                 })),
             };
-            const response = await fetch('http://127.0.0.1:8000/api/v1/exam/', {
+            const response = await fetch('https://tataredu.test/api/v1/exam/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

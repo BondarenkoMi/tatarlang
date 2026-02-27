@@ -1,0 +1,21 @@
+dependencies:
+- name: postgresql
+  repository: file://charts/postgresql
+  version: 0.1.0
+- name: rabbitmq
+  repository: file://charts/rabbitmq
+  version: 0.1.0
+- name: celery-worker
+  repository: file://charts/celery-worker
+  version: 0.1.0
+- name: flower
+  repository: file://charts/flower
+  version: 0.1.0
+- name: redis
+  repository: file://charts/redis
+  version: 0.1.0
+- name: redisinsight
+  repository: file://charts/redisinsight
+  version: 0.1.0
+digest: sha256:bc498b0aa7f9ee0e6134da541b150ea13e94223483dd8954245d678edfcf5dbd
+generated: "2026-02-26T20:49:11.24728+03:00"

@@ -54,6 +54,8 @@ social-auth-app-django==5.4.3
 social-auth-core==4.6.1
 sortedcontainers==2.4.0
 soupsieve==2.7
+django-celery-results==2.5.1
+redis==5.2.1
 sqlparse==0.5.3
 tornado==6.5.1
 trio==0.30.0

@@ -6,3 +6,6 @@
 /.idea
 /.mypy_cache
 backend/media/*
+helm/tataredu/charts/
+helm/vault/charts/
+.claude/

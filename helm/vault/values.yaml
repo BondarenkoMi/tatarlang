@@ -1,82 +1,33 @@
-# Vault configuration for Tataredu
+
 vault:
-  enabled: true
-  
-  # Server configuration
+  global:
+    enabled: true
   server:
-    image:
-      repository: hashicorp/vault
-      tag: "1.27.0"
-    
-    # Dev mode (для разработки, не использовать в продакшене!)
     dev:
-      enabled: false
-    
-    # Standalone mode
-    standalone:
       enabled: true
-      config: |
-        ui = true
-        api_addr = "http://0.0.0.0:8200"
-        cluster_addr = "https://0.0.0.0:8201"
-        
-        storage "file" {
-          path = "/vault/data"
-        }
-        
-        listener "tcp" {
-          address = "0.0.0.0:8200"
-          tls_disable = 1
-        }
-    
-    # HA mode (опционально)
-    ha:
-      enabled: false
-      replicas: 3
-      config: |
-        ui = true
-        
-        storage "consul" {
-          path = "vault"
-          address = "HOST_IP:8500"
-        }
-        
-        listener "tcp" {
-          address = "0.0.0.0:8200"
-          tls_cert_file = "/vault/tls/tls.crt"
-          tls_key_file = "/vault/tls/tls.key"
-        }
-    
-    # Ingress
+      devRootToken: "root"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
     ingress:
       enabled: true
       ingressClassName: nginx
       annotations:
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
       hosts:
-        - host: vault.tataredu.local
+        - host: vault.tataredu.test
           paths:
-            - path: /
-              pathType: Prefix
-      tls: []
-    
-    # Service
-    service:
-      type: ClusterIP
-      port: 8200
-    
-    # Web UI
-    ui:
-      enabled: true
-    
-    # Data storage
-    dataStorage:
-      enabled: true
-      size: 10Gi
-      storageClass: ""
-    
-    # Extra environment variables
-    extraEnvironmentVars:
-      VAULT_ADDR: "http://0.0.0.0:8200"
-      VAULT_API_ADDR: "http://0.0.0.0:8200"
-
+            - /
+      tls:
+        - secretName: vault-tls
+          hosts:
+            - vault.tataredu.test
+  ui:
+    enabled: true
+    serviceType: ClusterIP
+  injector:
+    enabled: false

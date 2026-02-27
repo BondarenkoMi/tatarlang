@@ -1,29 +1,36 @@
-1. Get the application URL by running these commands:
-{{- if .Values.ingress.enabled }}
-{{- range $host := .Values.ingress.hosts }}
-  {{- range .paths }}
-  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
-  {{- end }}
-{{- end }}
-{{- else if contains "NodePort" .Values.backend.service.type }}
-  export NODE_PORT=$(kubectl get --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "tataredu.fullname" . }}-backend)
-  export NODE_IP=$(kubectl get nodes --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} -o jsonpath="{.items[0].status.addresses[0].address}")
-  echo http://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.backend.service.type }}
-     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-           You can watch the status by running 'kubectl get --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} svc -w {{ include "tataredu.fullname" . }}-backend'
-  export SERVICE_IP=$(kubectl get svc --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} {{ include "tataredu.fullname" . }}-backend --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
-  echo http://$SERVICE_IP:{{ .Values.backend.service.port }}
-{{- else if contains "ClusterIP" .Values.backend.service.type }}
-  export POD_NAME=$(kubectl get pods --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} -l "app.kubernetes.io/name={{ include "tataredu.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=backend" -o jsonpath="{.items[0].metadata.name}")
-  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
-  echo "Visit http://127.0.0.1:8080 to use your application"
-  kubectl --namespace {{ .Values.namespace | default (include "tataredu.fullname" .) }} port-forward $POD_NAME 8080:$CONTAINER_PORT
-{{- end }}
+TatarEdu успешно установлен!
 
-2. Check the status of your deployment:
-  kubectl get pods -n {{ .Values.namespace | default (include "tataredu.fullname" .) }}
+Релиз: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Версия чарта: {{ .Chart.Version }}
 
-3. View logs:
-  kubectl logs -f deployment/{{ include "tataredu.fullname" . }}-backend -n {{ .Values.namespace | default (include "tataredu.fullname" .) }}
+=== Доступ к приложению ===
 
+1. Добавьте запись в /etc/hosts:
+   echo "$(minikube ip)  {{ .Values.ingress.host }}" | sudo tee -a /etc/hosts
+
+2. Запустите Minikube tunnel (в отдельном терминале):
+   minikube tunnel
+
+3. Откройте в браузере:
+   Frontend:  https://{{ .Values.ingress.host }}
+   API:       https://{{ .Values.ingress.host }}/api/v1/
+   Swagger:   https://{{ .Values.ingress.host }}/swagger/
+   Flower:    https://{{ .Values.ingress.host }}/flower
+
+=== Полезные команды ===
+
+# Статус подов:
+kubectl get pods -n {{ .Release.Namespace }}
+
+# Логи backend:
+kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=backend -f
+
+# Логи celery-worker:
+kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=celery-worker -f
+
+# Обновить релиз:
+helm upgrade {{ .Release.Name }} ./helm/tataredu -n {{ .Release.Namespace }}
+
+# Удалить релиз:
+helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}

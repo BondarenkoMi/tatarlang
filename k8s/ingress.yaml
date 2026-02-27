@@ -1,31 +1,27 @@
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: tataredu-ingress
   namespace: tataredu
+  labels:
+    app.kubernetes.io/part-of: tataredu
   annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
-
   ingressClassName: nginx
-  # TLS отключен для локальной разработки (заглушка не работает)
-  # Для продакшена раскомментируйте и настройте реальный сертификат
-  # tls:
-  #   - hosts:
-  #       - tataredu.local
-  #     secretName: tataredu-tls
+  tls:
+    - hosts:
+        - tataredu.test
+      secretName: tataredu-tls
   rules:
     - host: tataredu.test
       http:
         paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 3000
+
           - path: /api
             pathType: Prefix
             backend:
@@ -34,3 +30,49 @@ spec:
                 port:
                   number: 8000
 
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+
+          - path: /swagger
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+
+          - path: /redoc
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+
+          - path: /media
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+
+          - path: /flower
+            pathType: Prefix
+            backend:
+              service:
+                name: celery-flower
+                port:
+                  number: 5555
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000

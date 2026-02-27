@@ -20,7 +20,7 @@ export default function ExamDetail() {
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/v1/exam/${id}`, {
+        const response = await fetch(`https://tataredu.test/api/v1/exam/${id}`, {
           headers: { 'Authorization': `Bearer ${access}` },
         });
         if (!response.ok) throw new Error('Ошибка загрузки теста');
@@ -86,7 +86,7 @@ export default function ExamDetail() {
       })
     };
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/v1/exam/submit', {
+      const response = await fetch('https://tataredu.test/api/v1/exam/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

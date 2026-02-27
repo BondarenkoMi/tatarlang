@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'corsheaders',
+    'django_celery_results',
     'drf_yasg'
 ]
 
@@ -166,8 +167,20 @@ SWAGGER_SETTINGS = {
    }
 }
 
+# Redis cache backend (Django 4.0+, использует redis-py под капотом)
+_redis_password = os.getenv("REDIS_PASSWORD", "")
+_redis_host = os.getenv("REDIS_HOST", "localhost")
+_redis_port = os.getenv("REDIS_PORT", "6379")
+_redis_db = os.getenv("REDIS_DB", "0")
+_redis_auth = f":{_redis_password}@" if _redis_password else ""
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{_redis_auth}{_redis_host}:{_redis_port}/{_redis_db}",
+    }
+}
+
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
-CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_TIMEZONE = 'Europe/Moscow'
 CELERY_BEAT_SCHEDULE = {
     'update-events': {

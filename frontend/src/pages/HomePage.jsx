@@ -81,7 +81,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchCourses = async () => {
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/v1/course/', {
+                const response = await fetch('https://tataredu.test/api/v1/course/', {
                     headers: access ? { 'Authorization': `Bearer ${access}` } : {},
                 });
                 if (!response.ok) throw new Error('Ошибка загрузки курсов');
@@ -97,7 +97,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/v1/events/', {
+                const response = await fetch('https://tataredu.test/api/v1/events/', {
                     headers: access ? { 'Authorization': `Bearer ${access}` } : {},
                 });
                 if (!response.ok) throw new Error('Ошибка загрузки мероприятий');
@@ -117,7 +117,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/v1/exam/', {
+                const response = await fetch('https://tataredu.test/api/v1/exam/', {
                     headers: access ? { 'Authorization': `Bearer ${access}` } : {},
                 });
                 if (!response.ok) throw new Error('Ошибка загрузки тестов');

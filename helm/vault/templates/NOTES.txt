@@ -1,0 +1,28 @@
+HashiCorp Vault установлен!
+
+Namespace: {{ .Release.Namespace }}
+Dev режим: root token = "root"
+
+=== Доступ к Vault ===
+
+Web UI: https://vault.tataredu.local
+  Метод: Token
+  Token: root
+
+API: https://vault.tataredu.local/v1/
+
+=== Переменные для CLI ===
+
+export VAULT_ADDR=https://vault.tataredu.local
+export VAULT_TOKEN=root
+export VAULT_SKIP_VERIFY=true   # самоподписанный сертификат
+
+=== Настройка секретов (см. helm/scripts/vault-setup.sh) ===
+
+bash helm/scripts/vault-setup.sh
+
+=== ВНИМАНИЕ ===
+Dev-режим НЕ предназначен для продакшена:
+- Данные хранятся в памяти (теряются при перезапуске)
+- Root token захардкожен
+Для продакшена используйте HA-режим с внешним хранилищем.

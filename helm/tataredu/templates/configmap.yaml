@@ -1,17 +1,25 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "tataredu.configMapName" . }}
-  namespace: {{ .Values.namespace | default (include "tataredu.fullname" .) }}
+  name: {{ include "tataredu.configmapName" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "tataredu.labels" . | nindent 4 }}
 data:
-  POSTGRES_DB: {{ .Values.config.postgres.db }}
-  POSTGRES_USER: {{ .Values.config.postgres.user }}
-  POSTGRES_HOST: {{ include "tataredu.postgresHost" . }}
-  POSTGRES_PORT: {{ .Values.config.postgres.port | quote }}
-  RABBITMQ_USER: {{ .Values.config.rabbitmq.user }}
-  REACT_APP_API_URL: {{ .Values.config.reactAppApiUrl }}
-  CELERY_BROKER_URL: {{ .Values.config.celeryBrokerUrl }}
+  # PostgreSQL (non-sensitive)
+  POSTGRES_DB:   {{ .Values.postgres.database | quote }}
+  POSTGRES_HOST: {{ include "tataredu.postgresHost" . | quote }}
+  POSTGRES_PORT: {{ .Values.postgres.port | quote }}
 
+  # Django
+  DEBUG:         {{ .Values.django.debug | quote }}
+  ALLOWED_HOSTS: {{ .Values.django.allowedHosts | quote }}
 
+  # Frontend — URL, который браузер использует для вызова API (внешний через Ingress)
+  REACT_APP_API_URL: {{ printf "https://%s/api/v1" .Values.ingress.host | quote }}
+  NODE_ENV:          {{ .Values.frontend.nodeEnv | quote }}
+
+  # Redis (non-sensitive)
+  REDIS_HOST: {{ include "tataredu.redisHost" . | quote }}
+  REDIS_PORT: "6379"
+  REDIS_DB:   "0"

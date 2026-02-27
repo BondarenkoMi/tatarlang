@@ -1,126 +1,74 @@
 #!/bin/bash
-
-# Скрипт для применения всех манифестов Kubernetes в правильном порядке
-# Использование: ./apply.sh
+# Скрипт деплоя TatarEdu в Minikube
+# Использование: bash k8s/apply.sh
 
 set -e
+NAMESPACE=tataredu
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
-echo "🚀 Применение манифестов Kubernetes для проекта Tataredu..."
+echo -e "${YELLOW}=== TatarEdu K8s Deployment ===${NC}"
 
-# Проверка наличия кластера
-echo "🔍 Проверка подключения к кластеру..."
-if ! kubectl cluster-info &>/dev/null; then
-    echo "❌ Кластер Kubernetes не доступен!"
-    echo ""
-    echo "💡 Для запуска minikube выполните:"
-    echo "   minikube start"
-    echo ""
-    echo "   Или используйте скрипт: ./start-minikube.sh"
-    exit 1
-fi
+# --- 1. Сборка образов внутри Docker-демона Minikube ---
+echo -e "\n${YELLOW}[1/6] Building Docker images in Minikube context...${NC}"
+eval $(minikube docker-env)
+docker build -t tataredu/backend:latest ./backend
+docker build -t tataredu/frontend:latest ./frontend
+echo -e "${GREEN}Images built.${NC}"
 
-echo "✅ Кластер доступен"
+# --- 2. Базовые абстракции ---
+echo -e "\n${YELLOW}[2/6] Applying Namespace, ConfigMap, Secret...${NC}"
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/tls-secret.yaml
+
+# --- 3. База данных ---
+echo -e "\n${YELLOW}[3/6] Applying PostgreSQL (PV, PVC, StatefulSet)...${NC}"
+kubectl apply -f k8s/postgres-pv.yaml
+kubectl apply -f k8s/postgres.yaml
+echo "Waiting for PostgreSQL to be ready..."
+kubectl wait --for=condition=ready pod -l app=postgres -n $NAMESPACE --timeout=120s
+
+# --- 4. RabbitMQ ---
+echo -e "\n${YELLOW}[4/6] Applying RabbitMQ...${NC}"
+kubectl apply -f k8s/rabbitmq.yaml
+echo "Waiting for RabbitMQ to be ready..."
+kubectl wait --for=condition=ready pod -l app=rabbitmq -n $NAMESPACE --timeout=120s
+
+# --- 5. Миграции ---
+echo -e "\n${YELLOW}[5/6] Running Django migrations (Job)...${NC}"
+# Удалить предыдущий job если существует
+kubectl delete job django-migrate -n $NAMESPACE --ignore-not-found
+kubectl apply -f k8s/migrate-job.yaml
+echo "Waiting for migrations to complete..."
+kubectl wait --for=condition=complete job/django-migrate -n $NAMESPACE --timeout=120s
+
+# --- 6. Основные сервисы ---
+echo -e "\n${YELLOW}[6/6] Applying all services...${NC}"
+kubectl apply -f k8s/backend.yaml
+kubectl apply -f k8s/celery-worker.yaml
+kubectl apply -f k8s/celery-beat.yaml
+kubectl apply -f k8s/celery-flower.yaml
+kubectl apply -f k8s/frontend.yaml
+kubectl apply -f k8s/cron-clearsessions.yaml
+kubectl apply -f k8s/ingress.yaml
+
+# --- Итог ---
+MINIKUBE_IP=$(minikube ip)
+echo -e "\n${GREEN}=== Deployment complete! ===${NC}"
+echo -e "Minikube IP: ${GREEN}${MINIKUBE_IP}${NC}"
 echo ""
-
-# 1. Создаем namespace
-echo "📦 Создание namespace..."
-kubectl apply -f namespace.yaml
-
-# 2. Создаем ConfigMap и Secret (базовые конфигурации)
-echo "🔐 Создание ConfigMap и Secret..."
-kubectl apply -f config_map.yaml
-kubectl apply -f secret.yaml
-
-# 3. Создаем PersistentVolume для БД
-echo "💾 Создание PersistentVolume для PostgreSQL..."
-kubectl apply -f postgres-pv.yaml
-
-# 4. Разворачиваем PostgreSQL (StatefulSet)
-echo "🐘 Развертывание PostgreSQL (StatefulSet)..."
-kubectl apply -f postgres.yaml
-
-# 5. Ждем готовности PostgreSQL
-echo "⏳ Ожидание готовности PostgreSQL..."
-echo "   (ожидание создания подов StatefulSet...)"
-sleep 5
-# Ждем пока поды появятся
-for i in {1..30}; do
-    if kubectl get pods -n tataredu -l app=postgres 2>/dev/null | grep -q postgres; then
-        break
-    fi
-    echo "   Попытка $i/30..."
-    sleep 2
-done
-# Теперь ждем готовности
-kubectl wait --for=condition=ready pod -l app=postgres -n tataredu --timeout=120s || {
-    echo "⚠️  Предупреждение: PostgreSQL может еще запускаться"
-    kubectl get pods -n tataredu -l app=postgres
-}
-
-# 6. Разворачиваем RabbitMQ
-echo "🐰 Развертывание RabbitMQ..."
-kubectl apply -f rabbit.yaml
-
-# 7. Применяем миграции Django (Job)
-echo "🔄 Применение миграций Django..."
-kubectl apply -f migrate-job.yaml
-echo "   (ожидание выполнения миграций...)"
-sleep 3
-kubectl wait --for=condition=complete job/backend-migrate -n tataredu --timeout=120s || {
-    echo "⚠️  Предупреждение: Job миграций может еще выполняться или завершиться с ошибкой"
-    kubectl get job backend-migrate -n tataredu
-    kubectl logs job/backend-migrate -n tataredu --tail=20 || true
-}
-
-# 8. Разворачиваем backend
-echo "🔧 Развертывание backend..."
-kubectl apply -f backend.yaml
-
-# 9. Разворачиваем frontend
-echo "🎨 Развертывание frontend..."
-kubectl apply -f frontend.yaml
-
-# 10. Разворачиваем Celery worker
-echo "⚙️  Развертывание Celery worker..."
-kubectl apply -f celery-worker.yaml
-
-# 11. Разворачиваем Celery beat
-echo "⏰ Развертывание Celery beat..."
-kubectl apply -f celery-beat.yaml
-
-# 12. Разворачиваем Flower
-echo "🌸 Развертывание Flower..."
-kubectl apply -f celery-flower.yaml
-
-# 13. Создаем CronJob для периодических задач
-echo "📅 Создание CronJob для периодических задач..."
-kubectl apply -f cron-clearsessions.yaml
-
-# 14. Создаем TLS Secret (заглушка, нужно заменить на реальный)
-echo "🔒 Создание TLS Secret..."
-kubectl apply -f tls-secret.yaml
-
-# 15. Создаем Ingress
-echo "🌐 Создание Ingress..."
-kubectl apply -f ingress.yaml
-
+echo "Добавьте в /etc/hosts (нужен sudo):"
+echo -e "  ${YELLOW}echo '${MINIKUBE_IP}  tataredu.local' | sudo tee -a /etc/hosts${NC}"
 echo ""
-echo "✅ Все манифесты успешно применены!"
+echo "Запустите туннель в отдельном терминале:"
+echo -e "  ${YELLOW}minikube tunnel${NC}"
 echo ""
-echo "📊 Проверка статуса подов:"
-kubectl get pods -n tataredu
-
+echo "Доступ:"
+echo -e "  Frontend:  ${GREEN}https://tataredu.local${NC}"
+echo -e "  API:       ${GREEN}https://tataredu.local/api/v1/${NC}"
+echo -e "  Swagger:   ${GREEN}https://tataredu.local/swagger/${NC}"
+echo -e "  Flower:    ${GREEN}https://tataredu.local/flower${NC}"
 echo ""
-echo "🌐 Проверка сервисов:"
-kubectl get svc -n tataredu
-
-echo ""
-echo "📋 Проверка Ingress:"
-kubectl get ingress -n tataredu
-
-echo ""
-echo "💡 Для доступа к приложению добавьте в /etc/hosts:"
-echo "   <INGRESS_IP>  tataredu.local"
-echo ""
-echo "   Затем откройте в браузере: https://tataredu.local"
-
+echo "Статус подов:"
+kubectl get pods -n $NAMESPACE

@@ -20,7 +20,7 @@ export default function OrganizationProfile() {
 
     const fetchOrganization = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/v1/organization/me', {
+            const response = await fetch('https://tataredu.test/api/v1/organization/me', {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -59,7 +59,7 @@ export default function OrganizationProfile() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/v1/organization/me', {
+            const response = await fetch('https://tataredu.test/api/v1/organization/me', {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${access}`,

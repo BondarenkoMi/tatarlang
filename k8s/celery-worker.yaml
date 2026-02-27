@@ -1,8 +1,13 @@
+---
+# Celery Worker — обрабатывает асинхронные задачи из очереди RabbitMQ.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: celery-worker
   namespace: tataredu
+  labels:
+    app: celery-worker
+    app.kubernetes.io/part-of: tataredu
 spec:
   replicas: 1
   selector:
@@ -14,16 +19,41 @@ spec:
         app: celery-worker
     spec:
       initContainers:
-        - name: wait-for-db
-          image: postgres:15
-          command: ['sh', '-c', 'until pg_isready -h postgres -p 5432; do echo waiting for database; sleep 2; done;']
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z postgres 5432; do sleep 2; done
+              echo "PostgreSQL is ready."
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z rabbitmq 5672; do sleep 2; done
+              echo "RabbitMQ is ready."
       containers:
-        - name: worker
-          image: backend:latest
-          imagePullPolicy: Never
-          command: ["celery", "-A", "tatarlang.celery", "worker", "--loglevel=info"]
+        - name: celery-worker
+          image: tataredu/backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - tatarlang.celery
+            - worker
+            - --loglevel=info
           envFrom:
             - configMapRef:
-                name: app-config
+                name: tataredu-config
             - secretRef:
-                name: app-secret
+                name: tataredu-secret
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

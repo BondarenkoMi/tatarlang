@@ -1,8 +1,29 @@
+import re
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 from urllib.parse import urljoin
 from django.utils import timezone
+
+
+def _extract_schedule_dates(html):
+    """Extract event_id -> singleShowtime mapping from Apollo cache in page HTML."""
+    date_map = {}
+    # Each ActualEvent has: "event":{"__ref":"EventPreview:ID"} and singleShowtime
+    for m in re.finditer(
+        r'"__ref":"EventPreview:([a-f0-9]+)"[^}]+?"singleShowtime":"([^"]+)"',
+        html,
+        re.DOTALL,
+    ):
+        date_map[m.group(1)] = m.group(2)
+    # Also try reversed order (singleShowtime before __ref within ~3000 chars)
+    for m in re.finditer(r'"singleShowtime":"([^"]+)"', html):
+        showtime = m.group(1)
+        chunk = html[max(0, m.start() - 3000):m.start()]
+        ref_match = re.search(r'"__ref":"EventPreview:([a-f0-9]+)"', chunk)
+        if ref_match and ref_match.group(1) not in date_map:
+            date_map[ref_match.group(1)] = showtime
+    return date_map
 
 
 def parse_yandex_afisha(url, event_type):
@@ -12,6 +33,9 @@ def parse_yandex_afisha(url, event_type):
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
+    # Build event_id -> ISO datetime map from embedded Apollo cache
+    schedule_dates = _extract_schedule_dates(response.text)
+
     events = []
     event_cards = soup.find_all('div', {'data-component': 'EventCard'})
 
@@ -20,41 +44,33 @@ def parse_yandex_afisha(url, event_type):
             external_id = card.get('data-event-id')
             title = card.find('h2', {'data-test-id': 'eventCard.eventInfoTitle'}).get_text(strip=True)
 
-            date_item = card.find('li', class_='DetailsItem-fq4hbj-1')
-            date_str = date_item.get_text(strip=True) if date_item else ''
-
+            # Parse date from Apollo cache ISO datetime
             date = None
-            if date_str:
+            iso_dt = schedule_dates.get(external_id)
+            if iso_dt:
                 try:
-                    day_month, time = date_str.split(', ')
-                    day, month = day_month.split()
-                    month_map = {
-                        'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4,
-                        'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8,
-                        'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12
-                    }
-                    naive_date = datetime(
-                        year=datetime.now().year,
-                        month=month_map.get(month.lower(), 1),
-                        day=int(day),
-                        hour=int(time.split(':')[0]),
-                        minute=int(time.split(':')[1])
-                    )
+                    naive_date = datetime.fromisoformat(iso_dt)
                     date = timezone.make_aware(naive_date, timezone.get_current_timezone())
-                except (ValueError, AttributeError) as e:
+                except (ValueError, AttributeError):
                     date = None
 
-            venue = card.find('a', class_='PlaceLink-fq4hbj-2')
-            venue = venue.get('title') if venue else ''
+            venue_tag = card.find('a', {'data-test-id': 'eventCard.placeLink'})
+            if not venue_tag:
+                venue_tag = card.find('a', href=re.compile(r'/kazan/places/'))
+            venue = venue_tag.get_text(strip=True) if venue_tag else ''
 
-            price_block = card.find('span', class_='PriceBlock-njdnt8-11')
-            price = price_block.get_text(strip=True).replace('\xa0', ' ') if price_block else ''
+            price_tag = card.find('span', {'data-test-id': 'eventCard.price'})
+            if not price_tag:
+                price_tag = card.find(attrs={'data-test-id': re.compile(r'price', re.I)})
+            price = price_tag.get_text(strip=True).replace('\xa0', ' ') if price_tag else ''
 
-            img = card.find('img')
-            image_url = img.get('src') if img else ''
+            img = card.find('img', {'data-test-id': 'eventCard.image'})
+            if not img:
+                img = card.find('img')
+            image_url = (img.get('data-src') or img.get('src', '')) if img else ''
 
             event_link = card.find('a', {'data-test-id': 'eventCard.link'})
-            source_url = urljoin(url, event_link.get('href')) if event_link else ''
+            source_url = urljoin('https://afisha.yandex.ru', event_link.get('href')) if event_link else ''
 
             events.append({
                 'title': title,
@@ -70,8 +86,6 @@ def parse_yandex_afisha(url, event_type):
         except Exception as e:
             print(f"Ошибка при парсинге карточки: {e}")
             continue
-
-    print(events)
 
     return events
 

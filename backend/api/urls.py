@@ -6,7 +6,8 @@ from .views import (OrganizationAPIView,
                     EventViewSet, ExamViewSet,
                     submit_exam, ResultRetrieveAPIView,
                     ResultListAPIView, EnrollmentViewSet,
-                    CourseDetailAPIView, OrganizationCreateRetrieveUpdateAPIView)
+                    CourseDetailAPIView, OrganizationCreateRetrieveUpdateAPIView,
+                    run_update_events, task_status)
 
 
 router = SimpleRouter()
@@ -31,5 +32,8 @@ urlpatterns = [
     path('v1/exam/submit', submit_exam, name='submit_exam'),
     path('v1/result/', ResultListAPIView.as_view(), name='result_list'),
     path('v1/result/<int:pk>', ResultRetrieveAPIView.as_view(), name='result_detail'),
-    path('v1/', include(router.urls))
+    path('v1/', include(router.urls)),
+    # Celery Task API (Part 4)
+    path('v1/tasks/run-events/', run_update_events, name='task_run_events'),
+    path('v1/tasks/<str:task_id>/', task_status, name='task_status'),
 ]

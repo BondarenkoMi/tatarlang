@@ -1,18 +1,34 @@
 apiVersion: v2
 name: tataredu
-description: A Helm chart for Tataredu application
+description: |
+  Helm-чарт для TatarEdu — платформа изучения татарского языка.
+  Включает: Django backend, React frontend, Celery, PostgreSQL, RabbitMQ.
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
 keywords:
   - tataredu
+  - education
   - django
   - react
-  - postgresql
-  - rabbitmq
-home: https://github.com/your-org/tataredu
-sources:
-  - https://github.com/your-org/tataredu
 maintainers:
-  - name: Tataredu Team
-dependencies: []
+  - name: tataredu-team
+dependencies:
+  - name: postgresql
+    version: "0.1.0"
+    repository: "file://charts/postgresql"
+  - name: rabbitmq
+    version: "0.1.0"
+    repository: "file://charts/rabbitmq"
+  - name: celery-worker
+    version: "0.1.0"
+    repository: "file://charts/celery-worker"
+  - name: flower
+    version: "0.1.0"
+    repository: "file://charts/flower"
+  - name: redis
+    version: "0.1.0"
+    repository: "file://charts/redis"
+  - name: redisinsight
+    version: "0.1.0"
+    repository: "file://charts/redisinsight"

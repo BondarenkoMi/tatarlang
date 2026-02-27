@@ -1,41 +1,76 @@
-{{- if .Values.frontend.enabled }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
-  namespace: {{ .Values.namespace }}
+  name: {{ include "tataredu.fullname" . }}-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
 spec:
   replicas: {{ .Values.frontend.replicas }}
   selector:
     matchLabels:
-      app: frontend
+      {{- include "tataredu.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
   template:
     metadata:
       labels:
-        app: frontend
+        {{- include "tataredu.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
     spec:
+      # Init-контейнер гарантирует, что backend готов перед стартом фронтенда
+      initContainers:
+        {{- include "tataredu.initWaitBackend" . | nindent 8 }}
       containers:
         - name: frontend
-          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
-          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}"
+          imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
+          command: ["npm", "start"]
           ports:
-            - containerPort: {{ .Values.frontend.service.port }}
+            - name: http
+              containerPort: 3000
           env:
+            # REACT_APP_API_URL — URL, который браузер использует для API запросов.
+            # Должен быть внешним (через Ingress), т.к. браузер не видит внутренний кластер.
+            - name: REACT_APP_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "tataredu.configmapName" . }}
+                  key: REACT_APP_API_URL
             - name: NODE_ENV
-              value: development
+              value: {{ .Values.frontend.nodeEnv | quote }}
+            # Отключаем автооткрытие браузера (не нужно в контейнере)
+            - name: BROWSER
+              value: "none"
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
-  namespace: {{ .Values.namespace }}
+  name: {{ include "tataredu.fullname" . }}-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
 spec:
   selector:
-    app: frontend
+    {{- include "tataredu.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
   ports:
-    - port: {{ .Values.frontend.service.port }}
-      targetPort: {{ .Values.frontend.service.port }}
-  type: {{ .Values.frontend.service.type }}
-{{- end }}
-
-
+    - name: http
+      port: 3000
+      targetPort: 3000

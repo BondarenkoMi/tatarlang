@@ -1,16 +1,35 @@
+---
+
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: postgres-pv
   labels:
-    type: local
+    app: postgres
+    app.kubernetes.io/part-of: tataredu
 spec:
   capacity:
-    storage: 1Gi
+    storage: 5Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
+  storageClassName: manual
   hostPath:
-    path: /data/postgres
+    path: /data/tataredu/postgres
 
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: tataredu
+  labels:
+    app: postgres
+    app.kubernetes.io/part-of: tataredu
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 5Gi

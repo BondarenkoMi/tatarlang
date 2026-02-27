@@ -1,29 +1,41 @@
-{{- if .Values.cronjob.clearsessions.enabled }}
+---
+
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: backend-clearsessions
-  namespace: {{ .Values.namespace }}
+  name: {{ include "tataredu.fullname" . }}-clearsessions
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clearsessions
 spec:
-  schedule: {{ .Values.cronjob.clearsessions.schedule | quote }}
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 1
+  schedule: {{ .Values.clearsessions.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.clearsessions.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.clearsessions.failedJobsHistoryLimit }}
   jobTemplate:
     spec:
-      backoffLimit: 3
+      backoffLimit: 2
       template:
+        metadata:
+          labels:
+            {{- include "tataredu.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: clearsessions
         spec:
           restartPolicy: OnFailure
+          initContainers:
+            {{- include "tataredu.initWaitPostgres" . | nindent 12 }}
           containers:
-            - name: backend-clearsessions
-              image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
-              imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+            - name: clearsessions
+              image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
+              imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
               command: ["python", "manage.py", "clearsessions"]
               envFrom:
-                - configMapRef:
-                    name: app-config
-                - secretRef:
-                    name: app-secret
-{{- end }}
-
-
+                {{- include "tataredu.backendEnvFrom" . | nindent 16 }}
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi

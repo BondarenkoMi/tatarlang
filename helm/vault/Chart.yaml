@@ -1,15 +1,14 @@
 apiVersion: v2
 name: vault
-description: Vault for Tataredu secrets management
+description: |
+  HashiCorp Vault для TatarEdu — управление секретами.
+  Использует официальный chart hashicorp/vault.
+  Настроен: dev-режим, Ingress, web UI, AppRole auth.
 type: application
 version: 0.1.0
-appVersion: "1.27.0"
+appVersion: "1.21.2"
 dependencies:
   - name: vault
-    version: "0.27.0"
-    # Официальный Helm chart Vault от HashiCorp из ArtifactHub
-    # ArtifactHub: https://artifacthub.io/packages/helm/hashicorp/vault
-    # Если проблемы с 403 - использовать зеркало или OCI registry
-    repository: https://helm.releases.hashicorp.com
-    condition: vault.enabled
-
+    version: "0.32.0"
+    repository: "https://helm.releases.hashicorp.com"
+    alias: vault

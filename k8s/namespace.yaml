@@ -1,5 +1,7 @@
 apiVersion: v1
-
 kind: Namespace
 metadata:
   name: tataredu
+  labels:
+    app.kubernetes.io/name: tataredu
+    app.kubernetes.io/part-of: tataredu

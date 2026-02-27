@@ -1,24 +1,42 @@
-{{- if .Values.migration.enabled }}
+---
+# Job запускается однократно при helm install/upgrade.
+# Применяет Django-миграции к БД перед стартом приложения.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: backend-migrate
-  namespace: {{ .Values.namespace }}
+  name: {{ include "tataredu.fullname" . }}-migrate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
-  backoffLimit: 3
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrate.ttlSecondsAfterFinished }}
   template:
+    metadata:
+      labels:
+        {{- include "tataredu.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
     spec:
       restartPolicy: OnFailure
+      initContainers:
+        {{- include "tataredu.initWaitPostgres" . | nindent 8 }}
       containers:
-        - name: backend-migrate
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
-          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        - name: migrate
+          image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
           command: ["python", "manage.py", "migrate", "--noinput"]
           envFrom:
-            - configMapRef:
-                name: app-config
-            - secretRef:
-                name: app-secret
-{{- end }}
-
-
+            {{- include "tataredu.backendEnvFrom" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

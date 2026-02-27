@@ -29,7 +29,7 @@ export default function CourseDetail() {
     const fetchCourse = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/course/${id}`, {
+            const response = await fetch(`https://tataredu.test/api/v1/course/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -49,7 +49,7 @@ export default function CourseDetail() {
     const checkEnrollment = async () => {
         try {
             setCheckingEnrollment(true);
-            const response = await fetch('http://127.0.0.1:8000/api/v1/enrollments/', {
+            const response = await fetch('https://tataredu.test/api/v1/enrollments/', {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -70,7 +70,7 @@ export default function CourseDetail() {
 
     const handleEnroll = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/v1/enrollments/', {
+            const response = await fetch('https://tataredu.test/api/v1/enrollments/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

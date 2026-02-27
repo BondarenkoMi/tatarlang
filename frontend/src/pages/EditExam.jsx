@@ -31,7 +31,7 @@ export default function EditExam() {
 
     const fetchExam = async () => {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/exam/${id}`, {
+            const response = await fetch(`https://tataredu.test/api/v1/exam/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -152,7 +152,7 @@ export default function EditExam() {
                     choices: q.choices.filter(c => c.text).map(c => ({ text: c.text, is_correct: !!c.is_correct })),
                 })),
             };
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/exam/${id}`, {
+            const response = await fetch(`https://tataredu.test/api/v1/exam/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

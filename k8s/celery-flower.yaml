@@ -1,47 +1,77 @@
+---
+# Flower — веб-интерфейс мониторинга Celery-задач (порт 5555).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flower
+  name: celery-flower
   namespace: tataredu
+  labels:
+    app: celery-flower
+    app.kubernetes.io/part-of: tataredu
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: flower
+      app: celery-flower
   template:
     metadata:
       labels:
-        app: flower
+        app: celery-flower
     spec:
+      enableServiceLinks: false
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z rabbitmq 5672; do sleep 2; done
+              echo "RabbitMQ is ready."
       containers:
-        - name: flower
-          image: backend:latest
-          imagePullPolicy: Never
-          command: ["celery", "-A", "tatarlang.celery", "flower", "--port=5555", "--address=0.0.0.0"]
+        - name: celery-flower
+          image: tataredu/backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - tatarlang.celery
+            - flower
+            - --port=5555
           ports:
             - containerPort: 5555
-          env:
-            - name: FLOWER_PORT
-              value: "5555"
-            - name: FLOWER_BIND_ADDRESS
-              value: "0.0.0.0"
-            - name: CELERY_BROKER_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: CELERY_BROKER_URL
+              name: flower
           envFrom:
+            - configMapRef:
+                name: tataredu-config
             - secretRef:
-                name: app-secret
+                name: tataredu-secret
+          readinessProbe:
+            tcpSocket:
+              port: 5555
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: flower
+  name: celery-flower
   namespace: tataredu
+  labels:
+    app: celery-flower
+    app.kubernetes.io/part-of: tataredu
 spec:
   selector:
-    app: flower
+    app: celery-flower
   ports:
     - port: 5555
       targetPort: 5555
+      name: flower

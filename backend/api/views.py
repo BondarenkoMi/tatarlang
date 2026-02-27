@@ -1,3 +1,6 @@
+from events.tasks import update_events_task
+from tatarlang.celery import app as celery_app
+from tatarlang.cache import cache as redis_cache
 from rest_framework import generics, permissions, views, viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -69,9 +72,15 @@ class OrganizationListAPIView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        cache_key = 'organizations:list'
+        cached = redis_cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
         organizations = Organization.objects.all()
         serializer = OrganizationSerializer(organizations, many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        redis_cache.set(cache_key, data, ttl=1800)  # 30 минут
+        return Response(data)
 
 
 class CourseListAPIView(views.APIView):
@@ -79,18 +88,29 @@ class CourseListAPIView(views.APIView):
 
     def get(self, request):
         if request.user.role == 'organization':
-            # Для организаций показываем только их курсы
+            organization = request.user.organizations.first()
+            org_pk = organization.pk if organization else 'none'
+            cache_key = f'courses:org:{org_pk}'
+        else:
+            cache_key = 'courses:all'
+
+        cached = redis_cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        if request.user.role == 'organization':
             organization = request.user.organizations.first()
             if organization:
                 courses = Course.objects.filter(organization=organization)
             else:
                 courses = Course.objects.none()
         else:
-            # Для обычных пользователей показываем все курсы
             courses = Course.objects.all()
-        
+
         serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        redis_cache.set(cache_key, data, ttl=900)  # 15 минут
+        return Response(data)
 
 
 class CourseCreateAPIView(generics.CreateAPIView):
@@ -135,6 +155,17 @@ class EventViewSet(ReadOnlyModelViewSet):
     queryset = Event.objects.all().order_by('date')
     serializer_class = EventSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        cache_key = 'events:list'
+        cached = redis_cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        redis_cache.set(cache_key, data, ttl=3600)  # 1 час
+        return Response(data)
 
 class ExamViewSet(viewsets.ModelViewSet):
     queryset = Exam.objects.all().order_by('level')
@@ -227,6 +258,41 @@ class ResultListAPIView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Result.objects.filter(user=user).order_by('-completed_at')
+
+
+# =============================================================================
+# Celery Task API (Part 4)
+# =============================================================================
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def run_update_events(request):
+    """
+    Запускает задачу обновления событий через Celery.
+    Возвращает task_id для последующей проверки статуса.
+    """
+    task = update_events_task.delay()
+    return Response({'task_id': task.id, 'status': 'queued'}, status=202)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def task_status(request, task_id):
+    """
+    Возвращает статус и результат Celery-задачи по task_id (AsyncResult).
+    """
+    result = celery_app.AsyncResult(task_id)
+    data = {
+        'task_id': task_id,
+        'status': result.status,
+        'ready': result.ready(),
+    }
+    if result.ready():
+        if result.successful():
+            data['result'] = result.result
+        else:
+            data['error'] = str(result.result)
+    return Response(data)
 
 
 class EnrollmentViewSet(mixins.CreateModelMixin,

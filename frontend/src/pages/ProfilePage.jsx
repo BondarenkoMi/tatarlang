@@ -107,7 +107,7 @@ export default function ProfilePage() {
   };
 
   const fetchEnrolledCourses = async () => {
-    const response = await fetch('http://127.0.0.1:8000/api/v1/enrollments/', {
+    const response = await fetch('https://tataredu.test/api/v1/enrollments/', {
       headers: { 'Authorization': `Bearer ${access}` },
     });
     if (!response.ok) throw new Error('Ошибка загрузки записей на курсы');
@@ -119,7 +119,7 @@ export default function ProfilePage() {
     const coursesDetails = await Promise.all(
       enrollmentsList.map(async (enrollment) => {
         try {
-          const courseResponse = await fetch(`http://127.0.0.1:8000/api/v1/course/${enrollment.course}`, {
+          const courseResponse = await fetch(`https://tataredu.test/api/v1/course/${enrollment.course}`, {
             headers: { 'Authorization': `Bearer ${access}` },
           });
           if (courseResponse.ok) {
@@ -137,7 +137,7 @@ export default function ProfilePage() {
   };
 
   const fetchTestResults = async () => {
-    const response = await fetch('http://127.0.0.1:8000/api/v1/result/', {
+    const response = await fetch('https://tataredu.test/api/v1/result/', {
       headers: { 'Authorization': `Bearer ${access}` },
     });
     if (!response.ok) throw new Error('Ошибка загрузки результатов тестов');
@@ -149,7 +149,7 @@ export default function ProfilePage() {
     for (const result of resultsList) {
       if (result.exam && !titles[result.exam]) {
         try {
-          const examResponse = await fetch(`http://127.0.0.1:8000/api/v1/exam/${result.exam}`, {
+          const examResponse = await fetch(`https://tataredu.test/api/v1/exam/${result.exam}`, {
             headers: { 'Authorization': `Bearer ${access}` },
           });
           if (examResponse.ok) {

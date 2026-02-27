@@ -38,7 +38,7 @@ export default function CreateCourse() {
             Object.entries(form).forEach(([key, value]) => {
                 if (value) formData.append(key, value);
             });
-            const response = await fetch('http://127.0.0.1:8000/api/v1/course/create', {
+            const response = await fetch('https://tataredu.test/api/v1/course/create', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${access}`,

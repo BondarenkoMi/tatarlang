@@ -58,7 +58,7 @@ export default function Exams() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const examsRes = await fetch('http://127.0.0.1:8000/api/v1/exam/', {
+        const examsRes = await fetch('https://tataredu.test/api/v1/exam/', {
           headers: access ? { 'Authorization': `Bearer ${access}` } : {},
         });
         let examsData = await examsRes.json();
@@ -66,7 +66,7 @@ export default function Exams() {
         setExams(examsData.length ? examsData : staticExams);
         // Загружаем результаты пользователя
         if (access) {
-          const resultsRes = await fetch('http://127.0.0.1:8000/api/v1/result/', {
+          const resultsRes = await fetch('https://tataredu.test/api/v1/result/', {
             headers: { 'Authorization': `Bearer ${access}` },
           });
           let resultsData = await resultsRes.json();
@@ -89,7 +89,7 @@ export default function Exams() {
   const handleDeleteExam = async (examId) => {
     if (!window.confirm('Вы уверены, что хотите удалить этот тест? Это действие необратимо.')) return;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/exam/${examId}`, {
+      const response = await fetch(`https://tataredu.test/api/v1/exam/${examId}`, {
         method: 'DELETE',
         headers: access ? { 'Authorization': `Bearer ${access}` } : {},
       });

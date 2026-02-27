@@ -25,7 +25,7 @@ export default function EditCourse() {
 
     const fetchCourse = async () => {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/course/${id}`, {
+            const response = await fetch(`https://tataredu.test/api/v1/course/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -75,7 +75,7 @@ export default function EditCourse() {
                 if (value) formData.append(key, value);
             });
             
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/course/${id}`, {
+            const response = await fetch(`https://tataredu.test/api/v1/course/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${access}`,

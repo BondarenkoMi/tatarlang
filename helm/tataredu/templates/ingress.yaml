@@ -1,40 +1,73 @@
 {{- if .Values.ingress.enabled }}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: tataredu-ingress
-  namespace: {{ .Values.namespace }}
+  name: {{ include "tataredu.fullname" . }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
   annotations:
-    {{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-    {{- end }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
-  {{- if .Values.ingress.tls }}
+  {{- if .Values.ingress.tls.enabled }}
   tls:
-    {{- range .Values.ingress.tls }}
     - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName }}
   {{- end }}
   rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ .Values.ingress.host }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: /api
+            pathType: Prefix
             backend:
               service:
-                name: {{ .service }}
+                name: {{ include "tataredu.fullname" . }}-backend
                 port:
-                  number: {{ .port }}
-          {{- end }}
-    {{- end }}
+                  number: 8000
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tataredu.fullname" . }}-backend
+                port:
+                  number: 8000
+          - path: /swagger
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tataredu.fullname" . }}-backend
+                port:
+                  number: 8000
+          - path: /redoc
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tataredu.fullname" . }}-backend
+                port:
+                  number: 8000
+          - path: /media
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tataredu.fullname" . }}-backend
+                port:
+                  number: 8000
+          - path: /flower
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tataredu.fullname" . }}-celery-flower
+                port:
+                  number: 5555
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tataredu.fullname" . }}-frontend
+                port:
+                  number: 3000
 {{- end }}
-
-

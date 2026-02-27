@@ -13,7 +13,7 @@ const Events = () => {
 
                 console.log('Текущий токен:', access);
 
-                const response = await fetch('http://127.0.0.1:8000/api/v1/events/', {
+                const response = await fetch('https://tataredu.test/api/v1/events/', {
                     headers: {
                         'Authorization': `Bearer ${access}`,
                     },
