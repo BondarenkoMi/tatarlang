@@ -2,6 +2,13 @@ name: Self-hosted runner check
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/self-hosted-runner.yml
+      - helm/arc-controller-values.yaml
+      - helm/arc-runner-values.yaml
+      - helm/scripts/arc-runner-setup.sh
 
 permissions:
   contents: read
