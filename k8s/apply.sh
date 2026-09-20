@@ -2,7 +2,12 @@
 # Скрипт деплоя TatarEdu в Minikube
 # Использование: bash k8s/apply.sh
 
-set -e
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+for file in k8s/secret.local.yaml k8s/tls-secret.local.yaml; do
+  [ -f "$file" ] || { echo "Подготовьте $file по примеру в k8s/" >&2; exit 1; }
+done
 NAMESPACE=tataredu
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
@@ -10,7 +15,7 @@ echo -e "${YELLOW}=== TatarEdu K8s Deployment ===${NC}"
 
 # --- 1. Сборка образов внутри Docker-демона Minikube ---
 echo -e "\n${YELLOW}[1/6] Building Docker images in Minikube context...${NC}"
-eval $(minikube docker-env)
+eval "$(minikube docker-env)"
 docker build -t tataredu/backend:latest ./backend
 docker build -t tataredu/frontend:latest ./frontend
 echo -e "${GREEN}Images built.${NC}"
@@ -19,8 +24,8 @@ echo -e "${GREEN}Images built.${NC}"
 echo -e "\n${YELLOW}[2/6] Applying Namespace, ConfigMap, Secret...${NC}"
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secret.yaml
-kubectl apply -f k8s/tls-secret.yaml
+kubectl apply -f k8s/secret.local.yaml
+kubectl apply -f k8s/tls-secret.local.yaml
 
 # --- 3. База данных ---
 echo -e "\n${YELLOW}[3/6] Applying PostgreSQL (PV, PVC, StatefulSet)...${NC}"
@@ -32,6 +37,8 @@ kubectl wait --for=condition=ready pod -l app=postgres -n $NAMESPACE --timeout=1
 # --- 4. RabbitMQ ---
 echo -e "\n${YELLOW}[4/6] Applying RabbitMQ...${NC}"
 kubectl apply -f k8s/rabbitmq.yaml
+kubectl apply -f k8s/redis.yaml
+kubectl apply -f k8s/media-pvc.yaml
 echo "Waiting for RabbitMQ to be ready..."
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n $NAMESPACE --timeout=120s
 
@@ -59,16 +66,16 @@ echo -e "\n${GREEN}=== Deployment complete! ===${NC}"
 echo -e "Minikube IP: ${GREEN}${MINIKUBE_IP}${NC}"
 echo ""
 echo "Добавьте в /etc/hosts (нужен sudo):"
-echo -e "  ${YELLOW}echo '${MINIKUBE_IP}  tataredu.local' | sudo tee -a /etc/hosts${NC}"
+echo -e "  ${YELLOW}echo '${MINIKUBE_IP}  tataredu.test' | sudo tee -a /etc/hosts${NC}"
 echo ""
 echo "Запустите туннель в отдельном терминале:"
 echo -e "  ${YELLOW}minikube tunnel${NC}"
 echo ""
 echo "Доступ:"
-echo -e "  Frontend:  ${GREEN}https://tataredu.local${NC}"
-echo -e "  API:       ${GREEN}https://tataredu.local/api/v1/${NC}"
-echo -e "  Swagger:   ${GREEN}https://tataredu.local/swagger/${NC}"
-echo -e "  Flower:    ${GREEN}https://tataredu.local/flower${NC}"
+echo -e "  Frontend:  ${GREEN}https://tataredu.test${NC}"
+echo -e "  API:       ${GREEN}https://tataredu.test/api/v1/${NC}"
+echo -e "  Swagger:   ${GREEN}https://tataredu.test/swagger/${NC}"
+echo -e "  Flower:    ${GREEN}https://tataredu.test/flower${NC}"
 echo ""
 echo "Статус подов:"
 kubectl get pods -n $NAMESPACE

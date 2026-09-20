@@ -1,0 +1,29 @@
+image:
+  repository: redis/redisinsight
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5540
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hostname: redisinsight.tataredu.test
+  path: /
+  pathType: Prefix
+
+persistence:
+  enabled: true
+  size: 512Mi
+  storageClass: manual
+  hostPath: /data/tataredu/redisinsight
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

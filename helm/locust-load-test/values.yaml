@@ -1,0 +1,40 @@
+fullnameOverride: load-test-v2
+
+image:
+  repository: locustio/locust
+  tag: "2.41.6"
+  pullPolicy: IfNotPresent
+
+target:
+  host: http://tataredu-backend:8000
+
+test:
+  users: 100
+  spawnRate: 20
+  runTime: 2m
+  workers: 1
+  autostart: false
+
+master:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+worker:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 96Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: locust.tataredu.test
+  annotations: {}

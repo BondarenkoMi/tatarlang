@@ -1,0 +1,6 @@
+apiVersion: v2
+name: celery-worker
+description: Celery Worker subchart для TatarEdu
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

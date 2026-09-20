@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgresql
+description: PostgreSQL subchart для TatarEdu (StatefulSet + headless Service + PV/PVC)
+type: application
+version: 0.1.0
+appVersion: "15"

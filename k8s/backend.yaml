@@ -8,7 +8,9 @@ metadata:
     app: backend
     app.kubernetes.io/part-of: tataredu
 spec:
-  replicas: 2
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: backend
@@ -42,11 +44,18 @@ spec:
                 sleep 2
               done
               echo "RabbitMQ is ready."
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: backend-media
       containers:
         - name: backend
           image: tataredu/backend:latest
           imagePullPolicy: IfNotPresent
           command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+          volumeMounts:
+            - name: media
+              mountPath: /app/media
           ports:
             - containerPort: 8000
               name: http

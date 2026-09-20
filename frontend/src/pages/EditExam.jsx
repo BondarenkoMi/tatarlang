@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -25,13 +26,9 @@ export default function EditExam() {
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
 
-    useEffect(() => {
-        fetchExam();
-    }, [id, access]);
-
-    const fetchExam = async () => {
+    const fetchExam = useCallback(async () => {
         try {
-            const response = await fetch(`https://tataredu.test/api/v1/exam/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/exam/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -59,7 +56,11 @@ export default function EditExam() {
         } finally {
             setInitialLoading(false);
         }
-    };
+    }, [access, id]);
+
+    useEffect(() => {
+        fetchExam();
+    }, [fetchExam]);
 
     if (!user || user.role !== 'organization') {
         return <main style={{ padding: 32 }}><h2>Только для организаций</h2></main>;
@@ -152,7 +153,7 @@ export default function EditExam() {
                     choices: q.choices.filter(c => c.text).map(c => ({ text: c.text, is_correct: !!c.is_correct })),
                 })),
             };
-            const response = await fetch(`https://tataredu.test/api/v1/exam/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/exam/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -278,4 +279,4 @@ export default function EditExam() {
             </form>
         </main>
     );
-} 
+}

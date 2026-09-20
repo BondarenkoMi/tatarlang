@@ -1,0 +1,30 @@
+# Значения по умолчанию для celery-worker subchart.
+# Переопределяются из родительского values.yaml под ключом celery-worker:
+
+image:
+  repository: tataredu/backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicas: 1
+concurrency: 2
+
+# Поддержка .env из нескольких секретов и configmap-ов (Part 3)
+envFromSecrets: []
+envFromConfigMaps: []
+
+# Init-containers — хосты берутся из global (проставляет родительский чарт)
+global:
+  postgresHost: ""
+  rabbitmqHost: ""
+  busybox:
+    repository: busybox
+    tag: "1.36"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

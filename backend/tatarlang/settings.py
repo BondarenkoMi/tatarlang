@@ -2,18 +2,25 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-*njyy+5vn&o3s#8006j!ic-*iz-#--cra!y2382x!np)x_rp9d'
+# Переменные контейнера имеют приоритет над локальными .env.
+load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR.parent / '.env')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
-
-
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured('Задайте DJANGO_SECRET_KEY в .env или окружении.')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('1', 'true', 'yes')
+ALLOWED_HOSTS = [host.strip() for host in os.getenv(
+    'ALLOWED_HOSTS', 'localhost,127.0.0.1,tataredu.test'
+).split(',') if host.strip()]
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv(
+    'CSRF_TRUSTED_ORIGINS', 'https://tataredu.test'
+).split(',') if origin.strip()]
 
 # Application definition
 
@@ -135,14 +142,15 @@ REST_FRAMEWORK = {
 
 
 SIMPLE_JWT = {
-   'ACCESS_TOKEN_LIFETIME': timedelta(weeks=1),
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+   'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 AUTH_USER_MODEL = 'users.User'
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://frontend:3000",   
+    "http://127.0.0.1:3000",
 ]
 
 DJOSER = {
@@ -168,6 +176,7 @@ SWAGGER_SETTINGS = {
 }
 
 # Redis cache backend (Django 4.0+, использует redis-py под капотом)
+REDIS_ENABLED = os.getenv('REDIS_ENABLED', 'True').lower() in ('1', 'true', 'yes')
 _redis_password = os.getenv("REDIS_PASSWORD", "")
 _redis_host = os.getenv("REDIS_HOST", "localhost")
 _redis_port = os.getenv("REDIS_PORT", "6379")
@@ -180,11 +189,4 @@ CACHES = {
     }
 }
 
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
-CELERY_TIMEZONE = 'Europe/Moscow'
-CELERY_BEAT_SCHEDULE = {
-    'update-events': {
-        'task': 'events.tasks.update_events_task',
-        'schedule': crontab(hour=2, minute=0),
-    },
-}
+# Общая конфигурация Celery находится в celeryconfig.py.

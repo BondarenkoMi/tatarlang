@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './ProfilePage.css';
 
@@ -14,13 +15,9 @@ export default function OrganizationProfile() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        fetchOrganization();
-    }, [access]);
-
-    const fetchOrganization = async () => {
+    const fetchOrganization = useCallback(async () => {
         try {
-            const response = await fetch('https://tataredu.test/api/v1/organization/me', {
+            const response = await fetch(`${API_BASE_URL}/organization/me`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -39,7 +36,11 @@ export default function OrganizationProfile() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [access]);
+
+    useEffect(() => {
+        fetchOrganization();
+    }, [fetchOrganization]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -59,7 +60,7 @@ export default function OrganizationProfile() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const response = await fetch('https://tataredu.test/api/v1/organization/me', {
+            const response = await fetch(`${API_BASE_URL}/organization/me`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${access}`,
@@ -320,4 +321,4 @@ export default function OrganizationProfile() {
             </div>
         </div>
     );
-} 
+}

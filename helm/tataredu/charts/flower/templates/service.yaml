@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-celery-flower
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: celery-flower
+spec:
+  selector:
+    app.kubernetes.io/name: flower
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: flower
+      port: {{ .Values.port }}
+      targetPort: {{ .Values.port }}

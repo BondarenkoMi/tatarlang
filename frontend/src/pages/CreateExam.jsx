@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../services/api';
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -115,7 +116,7 @@ export default function CreateExam() {
                     choices: q.choices.filter(c => c.text).map(c => ({ text: c.text, is_correct: !!c.is_correct })),
                 })),
             };
-            const response = await fetch('https://tataredu.test/api/v1/exam/', {
+            const response = await fetch(`${API_BASE_URL}/exam/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

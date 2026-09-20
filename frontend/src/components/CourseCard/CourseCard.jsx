@@ -1,3 +1,4 @@
+import { API_BASE_URL, mediaUrl } from '../../services/api';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -97,7 +98,7 @@ export default function CourseCard({
 
     setIsEnrolling(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/v1/enrollment/', {
+      const response = await fetch(`${API_BASE_URL}/enrollments/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ export default function CourseCard({
       
       <div className={styles.courseCardPreview}>
         {photo ? (
-          <img src={photo} alt={name} className={styles.courseCardImg} />
+          <img src={mediaUrl(photo)} alt={name} className={styles.courseCardImg} />
         ) : (
           <div className={styles.coursePlaceholder}>
             <div className={styles.placeholderIcon}>

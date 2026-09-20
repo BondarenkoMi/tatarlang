@@ -1,0 +1,7 @@
+Locust Web UI: http://{{ .Values.ingress.host }}
+
+Add the local hostname if needed:
+  echo "127.0.0.1 {{ .Values.ingress.host }}" | sudo tee -a /etc/hosts
+
+Status:
+  kubectl get locusttest {{ include "locust-load-test.fullname" . }} -n {{ .Release.Namespace }}

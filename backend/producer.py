@@ -1,23 +1,3 @@
-#!/usr/bin/env python3
-"""
-producer.py — отправляет задачи в RabbitMQ exchange.
-
-Получает credentials RabbitMQ из Vault через API.
-Создаёт durable direct exchange 'tataredu'.
-Отправляет durable-сообщение с routing key = имя задачи.
-
-Запуск:
-  python producer.py update_events
-  python producer.py update_events --event-type theatre
-  python producer.py update_events --event-type concert
-
-Переменные окружения:
-  VAULT_ADDR   — адрес Vault (default: http://127.0.0.1:8200)
-  VAULT_TOKEN  — токен Vault (default: root)
-  RABBITMQ_HOST — хост RabbitMQ (default: 127.0.0.1)
-  RABBITMQ_PORT — порт RabbitMQ (default: 5672)
-"""
-
 import argparse
 import json
 import os
@@ -28,13 +8,14 @@ import requests
 
 EXCHANGE = "tataredu"
 VAULT_ADDR = os.getenv("VAULT_ADDR", "http://127.0.0.1:8200")
-VAULT_TOKEN = os.getenv("VAULT_TOKEN", "root")
+VAULT_TOKEN = os.getenv("VAULT_TOKEN", "")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "127.0.0.1")
 RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
 
 
 def get_rabbitmq_creds() -> tuple[str, str]:
-    """Получает user/password RabbitMQ из Vault KV v2."""
+    if not VAULT_TOKEN:
+        raise ValueError("Задайте VAULT_TOKEN для доступа к Vault.")
     resp = requests.get(
         f"{VAULT_ADDR}/v1/secret/data/tataredu/rabbitmq",
         headers={"X-Vault-Token": VAULT_TOKEN},
@@ -48,7 +29,6 @@ def get_rabbitmq_creds() -> tuple[str, str]:
 def send_task(task_name: str, params: dict | None = None) -> None:
     """Подключается к брокеру и отправляет задачу в exchange."""
     user, password = get_rabbitmq_creds()
-    print(f"[Vault] Credentials получены для пользователя '{user}'")
 
     credentials = pika.PlainCredentials(user, password)
     connection = pika.BlockingConnection(
@@ -60,20 +40,25 @@ def send_task(task_name: str, params: dict | None = None) -> None:
     )
     channel = connection.channel()
 
-    # Durable direct exchange
+
     channel.exchange_declare(
         exchange=EXCHANGE,
         exchange_type="direct",
         durable=True,
     )
 
+    channel.queue_declare(queue=task_name, durable=True)
+    channel.queue_bind(exchange=EXCHANGE, queue=task_name, routing_key=task_name)
+    channel.confirm_delivery()
+
     body = json.dumps({"task": task_name, "params": params or {}})
 
-    # Durable-сообщение (delivery_mode=2)
+
     channel.basic_publish(
         exchange=EXCHANGE,
         routing_key=task_name,
         body=body,
+        mandatory=True,
         properties=pika.BasicProperties(
             delivery_mode=pika.DeliveryMode.Persistent,
             content_type="application/json",
@@ -85,7 +70,7 @@ def send_task(task_name: str, params: dict | None = None) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="TatarEdu RabbitMQ Producer")
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "task",
         choices=["update_events"],
@@ -105,6 +90,9 @@ def main() -> None:
 
     try:
         send_task(args.task, params)
+    except ValueError as e:
+        print(f"[Ошибка] {e}", file=sys.stderr)
+        sys.exit(1)
     except requests.RequestException as e:
         print(f"[Ошибка] Не удалось получить данные из Vault: {e}", file=sys.stderr)
         sys.exit(1)

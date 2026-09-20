@@ -1,8 +1,3 @@
-{{/*
-=============================================================================
-_helpers.tpl — переиспользуемые шаблоны TatarEdu chart
-=============================================================================
-*/}}
 
 {{/* Имя чарта */}}
 {{- define "tataredu.name" -}}
@@ -10,19 +5,10 @@ _helpers.tpl — переиспользуемые шаблоны TatarEdu chart
 {{- end }}
 
 {{/*
-Полное имя релиза. Если имя релиза уже содержит имя чарта — не дублируем.
+Полное имя релиза, согласованное с локальными подчартами.
 */}}
 {{- define "tataredu.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-{{- end }}
+{{- default .Release.Name .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/* Метка версии чарта */}}
@@ -80,7 +66,7 @@ DNS-имя сервиса RabbitMQ (bitnami subchart называет серви
 CELERY_BROKER_URL строится из credentials и имени хоста RabbitMQ.
 */}}
 {{- define "tataredu.celeryBrokerUrl" -}}
-{{- printf "amqp://%s:%s@%s:5672//" .Values.rabbitmq.auth.username .Values.rabbitmq.auth.password (include "tataredu.rabbitmqHost" .) }}
+{{- printf "amqp://%s:%s@%s:5672//" (.Values.rabbitmq.auth.username | urlquery) (.Values.rabbitmq.auth.password | urlquery) (include "tataredu.rabbitmqHost" .) }}
 {{- end }}
 
 {{/*

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "locust-load-test.fullname" . }}-webui
+  labels:
+    {{- include "locust-load-test.labels" . | nindent 4 }}
+spec:
+  selector:
+    performance-test-pod-name: {{ include "locust-load-test.fullname" . }}-master
+  ports:
+    - name: http
+      port: 8089
+      targetPort: 8089

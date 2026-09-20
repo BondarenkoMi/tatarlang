@@ -1,55 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, mediaUrl } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserMe } from '../services/api';
 import { Link } from 'react-router-dom';
 import './ProfilePage.css';
-
-// Моковые данные для тестов (на случай если API недоступен)
-const mockTestResults = [
-  {
-    id: 1,
-    exam: 1,
-    score: 85,
-    completed_at: '2025-06-15T10:30:00Z'
-  },
-  {
-    id: 2,
-    exam: 2,
-    score: 92,
-    completed_at: '2025-06-10T14:20:00Z'
-  },
-  {
-    id: 3,
-    exam: 3,
-    score: 67,
-    completed_at: '2025-06-05T16:45:00Z'
-  }
-];
-
-const mockExamTitles = {
-  1: 'Тест A1 - Начальный уровень',
-  2: 'Тест A2 - Элементарный уровень', 
-  3: 'Тест B1 - Средний уровень'
-};
-
-const mockCourses = [
-  {
-    id: 1,
-    name: 'Основы татарского языка',
-    organization_name: 'Языковой центр Казани',
-    level: 1,
-    photo: null,
-    enrollment_date: '2025-06-01T00:00:00Z'
-  },
-  {
-    id: 2,
-    name: 'Татарская грамматика',
-    organization_name: 'КФУ',
-    level: 2,
-    photo: null,
-    enrollment_date: '2025-05-25T00:00:00Z'
-  }
-];
 
 export default function ProfilePage() {
   const { user, access } = useAuth();
@@ -65,6 +19,75 @@ export default function ProfilePage() {
   const [testResults, setTestResults] = useState([]);
   const [examTitles, setExamTitles] = useState({});
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState('');
+
+  const fetchEnrolledCourses = useCallback(async () => {
+    const response = await fetch(`${API_BASE_URL}/enrollments/`, {
+      headers: { 'Authorization': `Bearer ${access}` },
+    });
+    if (!response.ok) throw new Error('Ошибка загрузки записей на курсы');
+    
+    const enrollments = await response.json();
+    const enrollmentsList = Array.isArray(enrollments) ? enrollments : enrollments.results || [];
+    
+    // Получаем детали курсов
+    const coursesDetails = await Promise.all(
+      enrollmentsList.map(async (enrollment) => {
+        try {
+          const courseResponse = await fetch(`${API_BASE_URL}/course/${enrollment.course}`, {
+            headers: { 'Authorization': `Bearer ${access}` },
+          });
+          if (courseResponse.ok) {
+            const courseData = await courseResponse.json();
+            return { ...courseData, enrollment_date: enrollment.created_at };
+          }
+        } catch (err) {
+          console.error('Ошибка загрузки курса:', err);
+        }
+        return null;
+      })
+    );
+    
+    setEnrolledCourses(coursesDetails.filter(course => course !== null));
+  }, [access]);
+
+  const fetchTestResults = useCallback(async () => {
+    const response = await fetch(`${API_BASE_URL}/result/`, {
+      headers: { 'Authorization': `Bearer ${access}` },
+    });
+    if (!response.ok) throw new Error('Ошибка загрузки результатов тестов');
+    const results = await response.json();
+    const resultsList = Array.isArray(results) ? results : results.results || [];
+    setTestResults(resultsList);
+    // Получаем названия тестов
+    const titles = {};
+    for (const result of resultsList) {
+      if (result.exam && !titles[result.exam]) {
+        try {
+          const examResponse = await fetch(`${API_BASE_URL}/exam/${result.exam}`, {
+            headers: { 'Authorization': `Bearer ${access}` },
+          });
+          if (examResponse.ok) {
+            const examData = await examResponse.json();
+            titles[result.exam] = examData.title;
+          }
+        } catch (err) {
+          titles[result.exam] = 'Тест';
+        }
+      }
+    }
+    setExamTitles(titles);
+  }, [access]);
+
+  const fetchUserData = useCallback(async () => {
+    setLoading(true);
+    setDataError('');
+    const results = await Promise.allSettled([fetchEnrolledCourses(), fetchTestResults()]);
+    if (results.some(result => result.status === 'rejected')) {
+      setDataError('Не удалось загрузить часть данных. Попробуйте ещё раз.');
+    }
+    setLoading(false);
+  }, [fetchEnrolledCourses, fetchTestResults]);
 
   useEffect(() => {
     if (user) {
@@ -81,88 +104,7 @@ export default function ProfilePage() {
         setLoading(false);
       }
     }
-  }, [user, access]);
-
-  const fetchUserData = async () => {
-    try {
-      // Пытаемся загрузить данные с API, если не получается - fallback
-      const [coursesResult, testsResult] = await Promise.allSettled([
-        fetchEnrolledCourses(),
-        fetchTestResults()
-      ]);
-      if (coursesResult.status === 'rejected') {
-        setEnrolledCourses(mockCourses);
-      }
-      if (testsResult.status === 'rejected') {
-        setTestResults(mockTestResults);
-        setExamTitles(mockExamTitles);
-      }
-    } catch (error) {
-      setEnrolledCourses(mockCourses);
-      setTestResults(mockTestResults);
-      setExamTitles(mockExamTitles);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEnrolledCourses = async () => {
-    const response = await fetch('https://tataredu.test/api/v1/enrollments/', {
-      headers: { 'Authorization': `Bearer ${access}` },
-    });
-    if (!response.ok) throw new Error('Ошибка загрузки записей на курсы');
-    
-    const enrollments = await response.json();
-    const enrollmentsList = Array.isArray(enrollments) ? enrollments : enrollments.results || [];
-    
-    // Получаем детали курсов
-    const coursesDetails = await Promise.all(
-      enrollmentsList.map(async (enrollment) => {
-        try {
-          const courseResponse = await fetch(`https://tataredu.test/api/v1/course/${enrollment.course}`, {
-            headers: { 'Authorization': `Bearer ${access}` },
-          });
-          if (courseResponse.ok) {
-            const courseData = await courseResponse.json();
-            return { ...courseData, enrollment_date: enrollment.enrollment_date };
-          }
-        } catch (err) {
-          console.error('Ошибка загрузки курса:', err);
-        }
-        return null;
-      })
-    );
-    
-    setEnrolledCourses(coursesDetails.filter(course => course !== null));
-  };
-
-  const fetchTestResults = async () => {
-    const response = await fetch('https://tataredu.test/api/v1/result/', {
-      headers: { 'Authorization': `Bearer ${access}` },
-    });
-    if (!response.ok) throw new Error('Ошибка загрузки результатов тестов');
-    const results = await response.json();
-    const resultsList = Array.isArray(results) ? results : results.results || [];
-    setTestResults(resultsList);
-    // Получаем названия тестов
-    const titles = {};
-    for (const result of resultsList) {
-      if (result.exam && !titles[result.exam]) {
-        try {
-          const examResponse = await fetch(`https://tataredu.test/api/v1/exam/${result.exam}`, {
-            headers: { 'Authorization': `Bearer ${access}` },
-          });
-          if (examResponse.ok) {
-            const examData = await examResponse.json();
-            titles[result.exam] = examData.title;
-          }
-        } catch (err) {
-          titles[result.exam] = 'Тест';
-        }
-      }
-    }
-    setExamTitles(titles);
-  };
+  }, [fetchUserData, user]);
 
   const getLevelLabel = (level) => {
     const levels = { 1: 'A1', 2: 'A2', 3: 'B1', 4: 'B2', 5: 'C1', 6: 'C2' };
@@ -175,18 +117,6 @@ export default function ProfilePage() {
       4: '#ef4444', 5: '#8b5cf6', 6: '#ec4899'
     };
     return colors[level] || '#6b7280';
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return '#10b981';
-    if (score >= 60) return '#f59e0b';
-    return '#ef4444';
-  };
-
-  const getScoreText = (score) => {
-    if (score >= 80) return 'Отлично';
-    if (score >= 60) return 'Хорошо';
-    return 'Нужно улучшить';
   };
 
   if (!user) return null;
@@ -209,6 +139,7 @@ export default function ProfilePage() {
   return (
     <div className="modern-profile-page">
       <div className="profile-container">
+        {dataError && <div role="alert">{dataError} <button onClick={fetchUserData}>Повторить</button></div>}
         {/* Шапка профиля */}
         <div className="profile-header">
           <div className="profile-avatar">
@@ -353,7 +284,7 @@ export default function ProfilePage() {
                     <Link key={course.id} to={`/course/${course.id}`} className="course-card">
                       <div className="course-image">
                         {course.photo ? (
-                          <img src={course.photo} alt={course.name} />
+                          <img src={mediaUrl(course.photo)} alt={course.name} />
                         ) : (
                           <div className="course-placeholder">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

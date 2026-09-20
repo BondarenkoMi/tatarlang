@@ -15,11 +15,14 @@ data:
   DEBUG:         {{ .Values.django.debug | quote }}
   ALLOWED_HOSTS: {{ .Values.django.allowedHosts | quote }}
 
+  CSRF_TRUSTED_ORIGINS: {{ printf "https://%s" .Values.ingress.host | quote }}
+
   # Frontend — URL, который браузер использует для вызова API (внешний через Ingress)
-  REACT_APP_API_URL: {{ printf "https://%s/api/v1" .Values.ingress.host | quote }}
+  REACT_APP_API_URL: "/api/v1"
   NODE_ENV:          {{ .Values.frontend.nodeEnv | quote }}
 
   # Redis (non-sensitive)
   REDIS_HOST: {{ include "tataredu.redisHost" . | quote }}
   REDIS_PORT: "6379"
   REDIS_DB:   "0"
+  EXTERNAL_CACHE_TTL: {{ .Values.externalCache.ttl | quote }}

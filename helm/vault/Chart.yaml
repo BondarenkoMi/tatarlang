@@ -3,7 +3,7 @@ name: vault
 description: |
   HashiCorp Vault для TatarEdu — управление секретами.
   Использует официальный chart hashicorp/vault.
-  Настроен: dev-режим, Ingress, web UI, AppRole auth.
+  Настроен: Ingress, web UI, AppRole auth.
 type: application
 version: 0.1.0
 appVersion: "1.21.2"

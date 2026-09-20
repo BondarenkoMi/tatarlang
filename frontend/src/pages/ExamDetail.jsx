@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './ExamDetail.css';
@@ -7,6 +8,7 @@ export default function ExamDetail() {
   const { id } = useParams();
   const { access } = useAuth();
   const navigate = useNavigate();
+  const submitting = useRef(false);
   
   const [exam, setExam] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -20,7 +22,7 @@ export default function ExamDetail() {
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        const response = await fetch(`https://tataredu.test/api/v1/exam/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/exam/${id}`, {
           headers: { 'Authorization': `Bearer ${access}` },
         });
         if (!response.ok) throw new Error('Ошибка загрузки теста');
@@ -35,20 +37,6 @@ export default function ExamDetail() {
     };
     fetchExam();
   }, [id, access]);
-
-  useEffect(() => {
-    if (loading) return;
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [loading]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
@@ -73,7 +61,9 @@ export default function ExamDetail() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
+    if (!exam || submitting.current) return;
+    submitting.current = true;
     // Формируем payload для API
     const payload = {
       exam_id: exam.id,
@@ -86,7 +76,7 @@ export default function ExamDetail() {
       })
     };
     try {
-      const response = await fetch('https://tataredu.test/api/v1/exam/submit', {
+      const response = await fetch(`${API_BASE_URL}/exam/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,9 +88,20 @@ export default function ExamDetail() {
       const result = await response.json();
       navigate('/exam-result', { state: { result, exam } });
     } catch (err) {
+      submitting.current = false;
       setError(err.message);
     }
-  };
+  }, [exam, questions, answers, access, navigate]);
+
+  useEffect(() => {
+    if (loading || error || !exam) return;
+    if (timeLeft === 0) {
+      handleSubmit();
+      return;
+    }
+    const timer = setTimeout(() => setTimeLeft(value => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [loading, error, exam, timeLeft, handleSubmit]);
 
   const getProgress = () => {
     return ((currentQuestion + 1) / questions.length) * 100;

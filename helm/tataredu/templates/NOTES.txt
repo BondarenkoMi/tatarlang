@@ -30,7 +30,7 @@ kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=backend 
 kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=celery-worker -f
 
 # Обновить релиз:
-helm upgrade {{ .Release.Name }} ./helm/tataredu -n {{ .Release.Namespace }}
+bash helm/scripts/deploy.sh
 
 # Удалить релиз:
 helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}

@@ -1,0 +1,32 @@
+apiVersion: locust.io/v2
+kind: LocustTest
+metadata:
+  name: {{ include "locust-load-test.fullname" . }}
+  labels:
+    {{- include "locust-load-test.labels" . | nindent 4 }}
+spec:
+  image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+  imagePullPolicy: {{ .Values.image.pullPolicy }}
+  testFiles:
+    configMapRef: {{ include "locust-load-test.fullname" . }}-files
+  master:
+    command: >-
+      --locustfile /lotest/src/locustfile.py
+      --host {{ .Values.target.host }}
+      --users {{ .Values.test.users }}
+      --spawn-rate {{ .Values.test.spawnRate }}
+      --run-time {{ .Values.test.runTime }}
+    autostart: {{ .Values.test.autostart }}
+    autoquit:
+      enabled: false
+    labels:
+      app.kubernetes.io/component: locust-master
+    resources:
+      {{- toYaml .Values.master.resources | nindent 6 }}
+  worker:
+    command: --locustfile /lotest/src/locustfile.py
+    replicas: {{ .Values.test.workers }}
+    labels:
+      app.kubernetes.io/component: locust-worker
+    resources:
+      {{- toYaml .Values.worker.resources | nindent 6 }}

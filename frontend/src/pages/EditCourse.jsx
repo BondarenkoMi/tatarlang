@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export default function EditCourse() {
     const { user, access } = useAuth();
     const navigate = useNavigate();
     const { id } = useParams();
-    const location = useLocation();
     const [form, setForm] = useState({
         name: '',
         description: '',
@@ -19,13 +19,9 @@ export default function EditCourse() {
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
 
-    useEffect(() => {
-        fetchCourse();
-    }, [id, access]);
-
-    const fetchCourse = async () => {
+    const fetchCourse = useCallback(async () => {
         try {
-            const response = await fetch(`https://tataredu.test/api/v1/course/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/course/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -47,7 +43,11 @@ export default function EditCourse() {
         } finally {
             setInitialLoading(false);
         }
-    };
+    }, [access, id]);
+
+    useEffect(() => {
+        fetchCourse();
+    }, [fetchCourse]);
 
     if (!user || user.role !== 'organization') {
         return <main style={{ padding: 32 }}><h2>Только для организаций</h2></main>;
@@ -75,7 +75,7 @@ export default function EditCourse() {
                 if (value) formData.append(key, value);
             });
             
-            const response = await fetch(`https://tataredu.test/api/v1/course/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/course/${id}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${access}`,
@@ -190,4 +190,4 @@ export default function EditCourse() {
             </form>
         </main>
     );
-} 
+}

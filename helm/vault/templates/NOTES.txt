@@ -1,28 +1,28 @@
 HashiCorp Vault установлен!
 
 Namespace: {{ .Release.Namespace }}
-Dev режим: root token = "root"
+Режим: standalone с persistent volume
 
 === Доступ к Vault ===
 
-Web UI: https://vault.tataredu.local
+Web UI: https://vault.tataredu.test
   Метод: Token
-  Token: root
+  Token: используйте локальный root token только для администрирования
 
-API: https://vault.tataredu.local/v1/
+API: https://vault.tataredu.test/v1/
 
 === Переменные для CLI ===
 
-export VAULT_ADDR=https://vault.tataredu.local
-export VAULT_TOKEN=root
+export VAULT_ADDR=https://vault.tataredu.test
 export VAULT_SKIP_VERIFY=true   # самоподписанный сертификат
 
 === Настройка секретов (см. helm/scripts/vault-setup.sh) ===
 
-bash helm/scripts/vault-setup.sh
+VAULT_TOKEN=<root-token> bash helm/scripts/vault-setup.sh
 
 === ВНИМАНИЕ ===
-Dev-режим НЕ предназначен для продакшена:
-- Данные хранятся в памяти (теряются при перезапуске)
-- Root token захардкожен
-Для продакшена используйте HA-режим с внешним хранилищем.
+После перезапуска pod Vault остаётся sealed. Выполните:
+  bash helm/scripts/vault-init.sh
+
+Ключи unseal и root token находятся только в игнорируемом локальном файле.
+Текущая standalone-конфигурация подходит для учебного Minikube, но не обеспечивает HA.

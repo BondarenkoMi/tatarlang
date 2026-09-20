@@ -1,0 +1,28 @@
+# Значения по умолчанию для flower subchart.
+# Переопределяются из родительского values.yaml под ключом flower:
+
+image:
+  repository: tataredu/backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicas: 1
+port: 5555
+
+# Поддержка .env из нескольких секретов и configmap-ов (Part 3)
+envFromSecrets: []
+envFromConfigMaps: []
+
+global:
+  rabbitmqHost: ""
+  busybox:
+    repository: busybox
+    tag: "1.36"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

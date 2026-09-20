@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../services/api';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -94,7 +95,7 @@ export default function Courses() {
       try {
         setLoading(true);
         // Получить курсы
-        const coursesRes = await fetch('https://tataredu.test/api/v1/course/', {
+        const coursesRes = await fetch(`${API_BASE_URL}/course/`, {
           headers: access ? { 'Authorization': `Bearer ${access}` } : {},
         });
         let coursesData = await coursesRes.json();
@@ -102,7 +103,7 @@ export default function Courses() {
         setCourses(coursesData.length ? coursesData : staticCourses);
         // Получить записи на курсы (если пользователь залогинен)
         if (access) {
-          const enrollRes = await fetch('https://tataredu.test/api/v1/enrollments/', {
+          const enrollRes = await fetch(`${API_BASE_URL}/enrollments/`, {
             headers: { 'Authorization': `Bearer ${access}` },
           });
           let enrollData = await enrollRes.json();

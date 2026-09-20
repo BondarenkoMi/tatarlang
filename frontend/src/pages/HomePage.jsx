@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../services/api';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import EventCard from '../components/EventCard/EventCard';
@@ -81,7 +82,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchCourses = async () => {
             try {
-                const response = await fetch('https://tataredu.test/api/v1/course/', {
+                const response = await fetch(`${API_BASE_URL}/course/`, {
                     headers: access ? { 'Authorization': `Bearer ${access}` } : {},
                 });
                 if (!response.ok) throw new Error('Ошибка загрузки курсов');
@@ -97,7 +98,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const response = await fetch('https://tataredu.test/api/v1/events/', {
+                const response = await fetch(`${API_BASE_URL}/events/`, {
                     headers: access ? { 'Authorization': `Bearer ${access}` } : {},
                 });
                 if (!response.ok) throw new Error('Ошибка загрузки мероприятий');
@@ -117,7 +118,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                const response = await fetch('https://tataredu.test/api/v1/exam/', {
+                const response = await fetch(`${API_BASE_URL}/exam/`, {
                     headers: access ? { 'Authorization': `Bearer ${access}` } : {},
                 });
                 if (!response.ok) throw new Error('Ошибка загрузки тестов');

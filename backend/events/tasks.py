@@ -7,11 +7,13 @@ from events.parser import parse_yandex_afisha, parse_event_page
 
 
 @shared_task
-def update_events_task():
+def update_events_task(event_type=None):
     urls = [
         ('https://afisha.yandex.ru/kazan/selections/theatre-tatar-play', 'theatre'),
         ('https://afisha.yandex.ru/kazan/selections/concert-tatar-music', 'concert')
     ]
+    if event_type:
+        urls = [(url, kind) for url, kind in urls if kind == event_type]
     deleted_count = Event.objects.filter(
         Q(date__isnull=False) & 
         Q(date__lt=timezone.now())
@@ -20,6 +22,7 @@ def update_events_task():
 
     total_created = 0
     total_updated = 0
+    errors = []
 
     for url, event_type in urls:
         print(f"Обработка {url}...")
@@ -33,8 +36,7 @@ def update_events_task():
 
                 if event_data.get('source_url'):
                     details = parse_event_page(
-                        event_data['source_url'],
-                        {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                        event_data['source_url']
                     )
                     event_data.update(details)
 
@@ -61,7 +63,10 @@ def update_events_task():
 
         except Exception as e:
             print(f"Ошибка при обработке {url}: {e}")
-            continue
+            errors.append(str(e))
+
+    if errors:
+        raise RuntimeError("Не удалось обновить все источники: " + "; ".join(errors))
 
     return {
         'deleted_old': deleted_count,

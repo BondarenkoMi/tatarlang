@@ -1,5 +1,7 @@
 from .models import Organization, Course, Enrollment
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from django.db import transaction
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
@@ -8,8 +10,12 @@ class OrganizationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('owner', 'created_at')
 
+    @transaction.atomic
     def create(self, validated_data):
         request = self.context.get('request')
+        get_user_model().objects.select_for_update().get(pk=request.user.pk)
+        if request.user.organizations.exists():
+            raise serializers.ValidationError('У вас уже есть организация.')
         validated_data['owner'] = request.user
         return super().create(validated_data)
 
@@ -29,12 +35,15 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
-        validated_data['organization'] = request.user.organizations.first()
+        organization = request.user.organizations.first()
+        if organization is None:
+            raise serializers.ValidationError('Сначала создайте организацию.')
+        validated_data['organization'] = organization
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
-        if request.user.role != 'organization':
+        if request.user.role != 'organization' or instance.organization.owner_id != request.user.pk:
             raise serializers.ValidationError("You do not have permission to update this course.")
         return super().update(instance, validated_data)
 
@@ -49,4 +58,5 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
+        enrollment, _ = Enrollment.objects.get_or_create(**validated_data)
+        return enrollment

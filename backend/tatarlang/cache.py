@@ -12,6 +12,7 @@ import logging
 import os
 
 import redis
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,8 @@ class CacheManager:
 
     def get(self, key: str):
         """Возвращает десериализованное значение или None при промахе/ошибке."""
+        if not settings.REDIS_ENABLED:
+            return None
         try:
             value = self._get_client().get(key)
             if value is None:
@@ -49,6 +52,8 @@ class CacheManager:
 
     def set(self, key: str, value, ttl: int = 300) -> bool:
         """Сохраняет value как JSON с TTL в секундах. Возвращает True при успехе."""
+        if not settings.REDIS_ENABLED:
+            return False
         try:
             self._get_client().setex(key, ttl, json.dumps(value))
             return True
@@ -58,6 +63,8 @@ class CacheManager:
 
     def exists(self, key: str) -> bool:
         """Проверяет наличие ключа в Redis."""
+        if not settings.REDIS_ENABLED:
+            return False
         try:
             return bool(self._get_client().exists(key))
         except Exception as exc:
@@ -66,6 +73,8 @@ class CacheManager:
 
     def delete(self, key: str) -> bool:
         """Удаляет ключ из Redis."""
+        if not settings.REDIS_ENABLED:
+            return False
         try:
             self._get_client().delete(key)
             return True
@@ -75,10 +84,12 @@ class CacheManager:
 
     def delete_pattern(self, pattern: str) -> bool:
         """Удаляет все ключи, соответствующие glob-паттерну (осторожно на prod)."""
+        if not settings.REDIS_ENABLED:
+            return False
         try:
-            keys = self._get_client().keys(pattern)
-            if keys:
-                self._get_client().delete(*keys)
+            client = self._get_client()
+            for key in client.scan_iter(match=pattern, count=100):
+                client.delete(key)
             return True
         except Exception as exc:
             logger.warning("CacheManager.delete_pattern(%s) error: %s", pattern, exc)

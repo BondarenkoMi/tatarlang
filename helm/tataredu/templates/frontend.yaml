@@ -26,33 +26,21 @@ spec:
         - name: frontend
           image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}"
           imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
-          command: ["npm", "start"]
           ports:
             - name: http
-              containerPort: 3000
-          env:
-            # REACT_APP_API_URL — URL, который браузер использует для API запросов.
-            # Должен быть внешним (через Ingress), т.к. браузер не видит внутренний кластер.
-            - name: REACT_APP_API_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "tataredu.configmapName" . }}
-                  key: REACT_APP_API_URL
-            - name: NODE_ENV
-              value: {{ .Values.frontend.nodeEnv | quote }}
-            # Отключаем автооткрытие браузера (не нужно в контейнере)
-            - name: BROWSER
-              value: "none"
+              containerPort: 80
           readinessProbe:
-            tcpSocket:
-              port: 3000
-            initialDelaySeconds: 30
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 3
             periodSeconds: 10
             failureThreshold: 5
           livenessProbe:
-            tcpSocket:
-              port: 3000
-            initialDelaySeconds: 60
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
             periodSeconds: 30
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
@@ -73,4 +61,4 @@ spec:
   ports:
     - name: http
       port: 3000
-      targetPort: 3000
+      targetPort: 80

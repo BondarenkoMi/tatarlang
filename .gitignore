@@ -1,4 +1,6 @@
 .env
+node_modules/
+Enterprise-*.docx
 */venv/*
 */__pycache__/*
 .DS_Store
@@ -6,6 +8,10 @@
 /.idea
 /.mypy_cache
 backend/media/*
-helm/tataredu/charts/
+helm/tataredu/charts/*.tgz
 helm/vault/charts/
 .claude/
+helm/vault/tokens.json
+helm/vault/init-keys.json
+k8s/*.local.yaml
+backend/celerybeat-schedule*

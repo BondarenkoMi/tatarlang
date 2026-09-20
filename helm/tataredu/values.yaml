@@ -1,8 +1,7 @@
-
 global:
-  postgresHost: tataredu-postgresql
-  rabbitmqHost: tataredu-rabbitmq
-  redisHost: tataredu-redis
+  postgresHost: "{{ .Release.Name }}-postgresql"
+  rabbitmqHost: "{{ .Release.Name }}-rabbitmq"
+  redisHost: "{{ .Release.Name }}-redis"
   busybox:
     repository: busybox
     tag: "1.36"
@@ -28,34 +27,47 @@ image:
 
 django:
   debug: "True"
-  allowedHosts: "*"
+  allowedHosts: "localhost,127.0.0.1,tataredu.test"
+  secretKey: ""
 
 backend:
-  replicas: 2
+  replicas: 1
+  media:
+    size: 1Gi
+    storageClass: standard
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 250m
+      memory: 192Mi
     limits:
       cpu: 500m
-      memory: 512Mi
-
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 60
+    scaleDownStabilizationSeconds: 300
+  vpa:
+    enabled: true
+    updateMode: "Off"
+    minAllowedMemory: 64Mi
+    maxAllowedMemory: 512Mi
 
 frontend:
   replicas: 1
   nodeEnv: development
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 25m
+      memory: 32Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 200m
+      memory: 128Mi
 
 
 celery:
   beat:
-
     replicas: 1
     resources:
       requests:
@@ -89,11 +101,14 @@ clearsessions:
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
 
+externalCache:
+  ttl: 900
+
 
 postgres:
-  user: postgres
-  password: postgres   # ref+vault://secret/tataredu/postgres#password
-  database: tatarlang
+  user: ""
+  password: ""
+  database: ""
   port: "5432"
 
 
@@ -103,20 +118,20 @@ postgres:
 # -- PostgreSQL subchart (charts/postgresql/)
 postgresql:
   auth:
-    postgresPassword: postgres   
-    database: tatarlang          
+    postgresPassword: ""
+    database: ""
   persistence:
     enabled: true
     size: 5Gi
-    storageClass: manual
-    hostPath: /data/tataredu/postgres
+    storageClass: standard
+
 
 # -- RabbitMQ subchart (bitnami/rabbitmq)
 rabbitmq:
   auth:
-    username: admin              # ref+vault://secret/tataredu/rabbitmq#user
-    password: admin              # ref+vault://secret/tataredu/rabbitmq#password
-    erlangCookie: tataredu-erlang-cookie
+    username: ""
+    password: ""
+    erlangCookie: ""
   service:
     type: LoadBalancer
   ingress:
@@ -126,13 +141,15 @@ rabbitmq:
     path: /
     pathType: Prefix
   persistence:
-    enabled: false               
+    enabled: true
+    size: 1Gi
+    storageClass: standard
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 128Mi
     limits:
-      cpu: 500m
+      cpu: 300m
       memory: 512Mi
 
 # -- Celery Worker subchart (charts/celery-worker/)
@@ -142,10 +159,11 @@ celery-worker:
     tag: latest
     pullPolicy: IfNotPresent
   replicas: 1
+  concurrency: 2
   envFromSecrets:
-    - tataredu-secret
+    - "{{ .Release.Name }}-secret"
   envFromConfigMaps:
-    - tataredu-config
+    - "{{ .Release.Name }}-config"
   resources:
     requests:
       cpu: 100m
@@ -163,9 +181,9 @@ flower:
   replicas: 1
   port: 5555
   envFromSecrets:
-    - tataredu-secret
+    - "{{ .Release.Name }}-secret"
   envFromConfigMaps:
-    - tataredu-config
+    - "{{ .Release.Name }}-config"
   resources:
     requests:
       cpu: 50m
@@ -177,14 +195,14 @@ flower:
 # -- Redis subchart (charts/redis/)
 redis:
   auth:
-    password: redis-secret-password  # ref+vault://secret/tataredu/redis#password
+    password: ""
   service:
     type: LoadBalancer
   persistence:
     enabled: true
     size: 1Gi
-    storageClass: manual
-    hostPath: /data/tataredu/redis
+    storageClass: standard
+
 
 # -- RedisInsight subchart (charts/redisinsight/)
 redisinsight:
@@ -197,5 +215,4 @@ redisinsight:
   persistence:
     enabled: true
     size: 512Mi
-    storageClass: manual
-    hostPath: /data/tataredu/redisinsight
+    storageClass: standard

@@ -17,11 +17,11 @@ spec:
     - hosts:
         - tataredu.test
       secretName: tataredu-tls
+
   rules:
     - host: tataredu.test
       http:
         paths:
-
           - path: /api
             pathType: Prefix
             backend:

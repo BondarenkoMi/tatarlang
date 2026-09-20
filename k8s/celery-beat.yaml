@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/part-of: tataredu
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: celery-beat

@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/component: celery-beat
 spec:
   replicas: {{ .Values.celery.beat.replicas }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "tataredu.selectorLabels" . | nindent 6 }}

@@ -28,12 +28,11 @@ urlpatterns = [
     path('v1/course/create', CourseCreateAPIView.as_view(), name='course_create'),
     path('v1/course/<int:pk>', CourseDetailAPIView.as_view(), name='course_detail'),
     path('v1/exam/', ExamViewSet.as_view({'get': 'list', 'post': 'create'}), name='exam_list_create'),
-    path('v1/exam/<int:pk>', ExamViewSet.as_view({'get': 'retrieve', 'patch': 'update', 'delete': 'destroy'}), name='exam_detail'),
+    path('v1/exam/<int:pk>', ExamViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='exam_detail'),
     path('v1/exam/submit', submit_exam, name='submit_exam'),
     path('v1/result/', ResultListAPIView.as_view(), name='result_list'),
     path('v1/result/<int:pk>', ResultRetrieveAPIView.as_view(), name='result_detail'),
     path('v1/', include(router.urls)),
-    # Celery Task API (Part 4)
     path('v1/tasks/run-events/', run_update_events, name='task_run_events'),
     path('v1/tasks/<str:task_id>/', task_status, name='task_status'),
 ]

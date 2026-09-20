@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: 'https://tataredu.test/api/v1' });
+export const API_BASE_URL = (process.env.REACT_APP_API_URL || '/api/v1').replace(/\/$/, '');
+
+const api = axios.create({ baseURL: API_BASE_URL });
 
 export function loginRequest(data) {
     return api.post('/jwt/create/', data);
@@ -29,7 +31,11 @@ export function updateUserMe(data, access) {
 }
 
 export function updateOrgMe(data, access) {
-    return api.patch('/organization/me/', data, {
+    return api.patch('/organization/me', data, {
         headers: { Authorization: `Bearer ${access}` },
     });
+}
+export function mediaUrl(path) {
+    if (!path) return path;
+    return new URL(path, new URL(API_BASE_URL, window.location.origin).origin).href;
 }

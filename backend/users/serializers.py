@@ -5,6 +5,8 @@ from .models import User
 
 
 class UserCreateSerializer(BaseUserCreateSerializer):
+    role = serializers.ChoiceField(choices=['user', 'organization'], default='user')
+
     class Meta(BaseUserCreateSerializer.Meta):
         model = User
         fields = ('id', 'email', 'password', 'first_name', 'last_name',
@@ -17,6 +19,7 @@ class UserSerializer(BaseUserSerializer):
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'patronymic',
                   'phone', 'role')
+        read_only_fields = ('id', 'email', 'role')
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

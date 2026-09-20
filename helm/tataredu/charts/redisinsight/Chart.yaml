@@ -1,0 +1,6 @@
+apiVersion: v2
+name: redisinsight
+description: RedisInsight subchart для TatarEdu (аналог heywood8/redisinsight)
+type: application
+version: 0.1.0
+appVersion: "2.x"

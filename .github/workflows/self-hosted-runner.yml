@@ -1,0 +1,21 @@
+name: Self-hosted runner check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runner-check:
+    runs-on: tataredu-runner
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prove execution on ARC runner
+        run: |
+          echo "Runner: $RUNNER_NAME"
+          echo "Architecture: $RUNNER_ARCH"
+          uname -a
+          test -f helm/arc-runner-values.yaml

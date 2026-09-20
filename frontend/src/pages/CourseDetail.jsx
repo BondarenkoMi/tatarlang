@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, mediaUrl } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,24 +13,10 @@ export default function CourseDetail() {
     const [loading, setLoading] = useState(!location.state);
     const [checkingEnrollment, setCheckingEnrollment] = useState(false);
 
-    useEffect(() => {
-        // Если данные курса не переданы через state, загружаем их по ID
-        if (!location.state && id) {
-            fetchCourse();
-        }
-    }, [id, access]);
-
-    useEffect(() => {
-        // Проверяем, записан ли пользователь на курс
-        if (course.id && !checkingEnrollment) {
-            checkEnrollment();
-        }
-    }, [course.id, access]);
-
-    const fetchCourse = async () => {
+    const fetchCourse = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch(`https://tataredu.test/api/v1/course/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/course/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -44,12 +31,12 @@ export default function CourseDetail() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [access, id]);
 
-    const checkEnrollment = async () => {
+    const checkEnrollment = useCallback(async () => {
         try {
             setCheckingEnrollment(true);
-            const response = await fetch('https://tataredu.test/api/v1/enrollments/', {
+            const response = await fetch(`${API_BASE_URL}/enrollments/`, {
                 headers: {
                     'Authorization': `Bearer ${access}`,
                 },
@@ -66,11 +53,23 @@ export default function CourseDetail() {
         } finally {
             setCheckingEnrollment(false);
         }
-    };
+    }, [access, course.id]);
+
+    useEffect(() => {
+        if (!location.state && id) {
+            fetchCourse();
+        }
+    }, [fetchCourse, id, location.state]);
+
+    useEffect(() => {
+        if (course.id) {
+            checkEnrollment();
+        }
+    }, [checkEnrollment, course.id]);
 
     const handleEnroll = async () => {
         try {
-            const response = await fetch('https://tataredu.test/api/v1/enrollments/', {
+            const response = await fetch(`${API_BASE_URL}/enrollments/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -127,7 +126,7 @@ export default function CourseDetail() {
         <main style={{ maxWidth: 700, margin: '0 auto', padding: 24 }}>
             <div style={{ display: 'flex', gap: 32 }}>
                 {course.photo && (
-                    <img src={course.photo} alt={course.name} style={{ width: 220, height: 220, objectFit: 'cover', borderRadius: 12 }} />
+                    <img src={mediaUrl(course.photo)} alt={course.name} style={{ width: 220, height: 220, objectFit: 'cover', borderRadius: 12 }} />
                 )}
                 <div style={{ flex: 1 }}>
                     <h1>{course.name}</h1>
@@ -183,4 +182,4 @@ export default function CourseDetail() {
             </div>
         </main>
     );
-} 
+}

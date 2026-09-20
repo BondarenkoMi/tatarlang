@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/part-of: tataredu
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: rabbitmq
@@ -17,6 +19,10 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: rabbitmq-data
       containers:
         - name: rabbitmq
           image: rabbitmq:3-management
@@ -25,7 +31,12 @@ spec:
               name: amqp
             - containerPort: 15672
               name: management
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
           env:
+            - name: RABBITMQ_NODENAME
+              value: rabbit@localhost
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
@@ -80,3 +91,15 @@ spec:
     - name: management
       port: 15672
       targetPort: 15672
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-data
+  namespace: tataredu
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi

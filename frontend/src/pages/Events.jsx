@@ -1,27 +1,19 @@
+import { API_BASE_URL } from '../services/api';
 import {useEffect, useState} from 'react';
 import EventCard from "../components/EventCard/EventCard";
 import './Events.css';
-import {useAuth} from "../contexts/AuthContext";
 
 const Events = () => {
-    const { access } = useAuth();
     const [events, setEvents] = useState([]);
 
     useEffect(() => {
         const fetchEvents = async () => {
             try {
 
-                console.log('Текущий токен:', access);
-
-                const response = await fetch('https://tataredu.test/api/v1/events/', {
-                    headers: {
-                        'Authorization': `Bearer ${access}`,
-                    },
-                });
+                const response = await fetch(`${API_BASE_URL}/events/`);
                 if (!response.ok) {
                     throw new Error(`Ошибка сети: ${response.status}`);
                 }
-                console.log('Response:', response);
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setEvents(data);

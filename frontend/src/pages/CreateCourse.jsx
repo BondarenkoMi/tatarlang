@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../services/api';
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -38,7 +39,7 @@ export default function CreateCourse() {
             Object.entries(form).forEach(([key, value]) => {
                 if (value) formData.append(key, value);
             });
-            const response = await fetch('https://tataredu.test/api/v1/course/create', {
+            const response = await fetch(`${API_BASE_URL}/course/create`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${access}`,

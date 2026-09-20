@@ -1,18 +1,22 @@
-
 vault:
   global:
     enabled: true
   server:
     dev:
+      enabled: false    # выключаем dev-mode
+    ha:
+      enabled: false    # для локального minikube можно оставить false
+    dataStorage:
       enabled: true
-      devRootToken: "root"
+      # StatefulSet уже создан с claim template на 10Gi. Уменьшать PVC нельзя.
+      size: 10Gi
     resources:
       requests:
         cpu: 100m
         memory: 128Mi
       limits:
         cpu: 500m
-        memory: 256Mi
+        memory: 512Mi
     ingress:
       enabled: true
       ingressClassName: nginx
