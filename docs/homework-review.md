@@ -132,8 +132,8 @@ HTTPS и сохранения данных после пересоздания p
 | 7.2 | **Выполнено:** добавлен воспроизводимый Locust-сценарий чтения API; проверены 10/50/100/150/200 пользователей. Максимальная безошибочная ступень — 100. | Параметры и реальный отчёт находятся в `load-tests/` и `docs/homework-7.md`. |
 | 7.3 | **Выполнено:** при 71%/60% CPU HPA увеличил Backend с 1 до 2 pod и после стабилизации вернул 1. VPA 1.7.1 дал memory recommendation 250Mi в режиме `Off`. | `get/describe hpa`, наблюдаемый scale-up/scale-down и `describe vpa` с рекомендацией памяти. |
 | 7.4 | **Выполнено:** Locust Operator 2.3.1 и отдельный chart создают ConfigMap, `LocustTest`, master/worker, Service и Ingress. | `load-test-v2` Running, worker `1/1`, `load-test-v2-webui:8089` имеет endpoint, UI через Ingress отвечает HTTP 200. |
-| 8.1 | semantic-release и GitHub Actions (origin сейчас GitHub), сборка/публикация образов с версией | Успешный pipeline, тег и соответствующий образ в registry. |
-| 8.2 | Собственный runner через Helm | Зарегистрированный runner в кластере и pipeline, выполненный именно им. |
+| 8.1 | **Выполнено:** semantic-release создал GitHub Release `v1.0.1`; workflow собрал Backend и Frontend и опубликовал version/latest теги в GHCR. | Успешный run `35528176864`, тег `v1.0.1`, GitHub Release и container packages. |
+| 8.2 | **Выполнено:** официальный ARC 0.14.2 установлен Helm chart, scale set зарегистрирован для репозитория. | Run `35528398119` успешно выполнен runner `tataredu-runner-9qwvf-runner-trxjs`; временный pod автоматически создан и удалён. |
 | 9 | Структура werf, исходники/Helm submodules, global values, Vault и registry token | Сборка/деплой werf и проверка доступности приложения. Для точного скрипта понадобится упомянутая в ДЗ презентация либо её требования. |
 | 10 | TruffleHog в CI/pre-commit, Trivy в CI, SonarQube и анализ | Отчёты сканеров и pipeline. Найденные секреты не выводятся в открытые логи. |
 | 11 | Helmfile, Prometheus/Ingress metrics, Loki/Promtail, Grafana/SMTP alert | Запрос nginx-метрик, поиск логов, настроенный alert и проверка уведомления. |

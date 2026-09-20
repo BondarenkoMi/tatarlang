@@ -30,6 +30,11 @@ npx semantic-release --dry-run --no-ci
 Реальная публикация будет проверена после commit и push изменений в GitHub. Для
 следующего этапа отдельный self-hosted runner будет развёрнут в Kubernetes через Helm.
 
+Проверено 20 сентября 2026 года: workflow успешно выпустил `v1.0.1`, собрал оба
+образа и отправил version/latest теги в GHCR. Первый запуск `v1.0.0` обнаружил
+устаревшую Debian Bullseye базу Backend с `404` при `apt-get`; Backend переведён на
+`python:3.10-slim-bookworm`, после чего полная локальная и CI-сборки прошли.
+
 ## 8.2. Собственный runner в Kubernetes
 
 Используется официальный GitHub Actions Runner Controller (ARC) версии 0.14.2. Он
@@ -66,3 +71,8 @@ unset GITHUB_PAT
 После регистрации workflow **Self-hosted runner check** запускается вручную в GitHub
 Actions. В логе должны быть имя эфемерного runner и архитектура, а в кластере во время
 выполнения — временный runner pod.
+
+Практическая проверка прошла успешно в GitHub Actions run `35528398119`: ARC увеличил
+число runners с 0 до 1, создал pod `tataredu-runner-9qwvf-runner-trxjs`, job выполнился
+на нём и завершился со статусом success, после чего pod был автоматически удалён и
+scale set вернулся к нулю.
