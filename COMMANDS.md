@@ -102,3 +102,72 @@ export GITHUB_PAT
 bash helm/scripts/arc-runner-setup.sh
 unset GITHUB_PAT
 ```
+
+## ДЗ 9 — werf
+
+Docker Hub username, access token и `WERF_REPO` предварительно добавляются только в
+локальный `helm/.env` по примеру `helm/.env.example`.
+
+```bash
+# Проверить Vault и render без сборки и публикации образов:
+bash helm/scripts/werf-deploy.sh --render-only
+
+# Собрать образы, отправить их в Docker Hub и обновить приложение:
+bash helm/scripts/werf-deploy.sh
+```
+
+## ДЗ 11 — Prometheus, Loki и Grafana
+
+Локальные данные Grafana и SMTP хранятся в `helm/monitoring/.env`, созданном по
+примеру `helm/monitoring/.env.example`.
+
+```bash
+# Установить или обновить весь стек мониторинга:
+bash helm/scripts/monitoring-deploy.sh
+
+# Проверить релизы и Kubernetes-ресурсы:
+helmfile list
+helm list -n monitoring
+kubectl get pods,pvc,ingress -n monitoring
+kubectl top pods -n monitoring --containers
+kubectl top node
+```
+
+Для предварительного просмотра изменений Helmfile нужны переменные из локального
+файла. Команда не печатает их значения:
+
+```bash
+set -a
+source helm/monitoring/.env
+set +a
+helmfile diff
+unset GRAFANA_ADMIN_USER GRAFANA_ADMIN_PASSWORD GRAFANA_SMTP_ENABLED \
+  GRAFANA_SMTP_HOST GRAFANA_SMTP_USER GRAFANA_SMTP_PASSWORD \
+  GRAFANA_SMTP_FROM_ADDRESS GRAFANA_ALERT_EMAIL
+```
+
+В `/etc/hosts` должны присутствовать:
+
+```text
+127.0.0.1 grafana.tataredu.test prometheus.tataredu.test
+```
+
+При запущенном `minikube tunnel` открыть:
+
+- `http://grafana.tataredu.test`;
+- `http://prometheus.tataredu.test`.
+
+Запрос Prometheus для проверки ingress-nginx:
+
+```promql
+up{job="ingress-nginx"}
+```
+
+Запрос Loki в Grafana → Explore для логов приложения:
+
+```logql
+{namespace="tataredu"}
+```
+
+Email-настройки проверяются в Grafana: **Alerting → Contact points → Test**.
+Полное описание и сценарий показа: `docs/homework-11.md`.

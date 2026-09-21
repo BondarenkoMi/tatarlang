@@ -1,0 +1,41 @@
+---
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "tataredu.fullname" . }}-clearsessions
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clearsessions
+spec:
+  schedule: {{ .Values.clearsessions.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.clearsessions.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.clearsessions.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "tataredu.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: clearsessions
+        spec:
+          restartPolicy: OnFailure
+          initContainers:
+            {{- include "tataredu.initWaitPostgres" . | nindent 12 }}
+          containers:
+            - name: clearsessions
+              image: {{ include "tataredu.backendImage" . | quote }}
+              imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+              command: ["python", "manage.py", "clearsessions"]
+              envFrom:
+                {{- include "tataredu.backendEnvFrom" . | nindent 16 }}
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi

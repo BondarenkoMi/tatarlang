@@ -1,0 +1,55 @@
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+
+resources:
+  requests:
+    cpu: 75m
+    memory: 160Mi
+  limits:
+    cpu: 400m
+    memory: 384Mi
+
+persistence:
+  enabled: true
+  storageClassName: standard
+  size: 1Gi
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hosts:
+    - grafana.tataredu.test
+  path: /
+  pathType: Prefix
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc.cluster.local
+        isDefault: true
+        editable: false
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki-gateway.monitoring.svc.cluster.local
+        editable: false
+
+grafana.ini:
+  analytics:
+    reporting_enabled: false
+    check_for_updates: false
+  unified_alerting:
+    enabled: true
+  server:
+    root_url: http://grafana.tataredu.test
+
+initChownData:
+  enabled: false

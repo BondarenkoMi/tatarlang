@@ -1,0 +1,11 @@
+smtp:
+  existingSecret: {{ if eq (env "GRAFANA_SMTP_ENABLED") "true" }}grafana-smtp{{ else }}""{{ end }}
+  userKey: user
+  passwordKey: password
+
+grafana.ini:
+  smtp:
+    enabled: {{ env "GRAFANA_SMTP_ENABLED" | default "false" }}
+    host: {{ env "GRAFANA_SMTP_HOST" | default "smtp.example.com:587" | quote }}
+    from_address: {{ env "GRAFANA_SMTP_FROM_ADDRESS" | default "grafana@example.com" | quote }}
+    skip_verify: false

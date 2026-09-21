@@ -1,0 +1,25 @@
+# Значения по умолчанию для postgresql subchart.
+# Переопределяются из родительского chart через секцию postgresql: в values.yaml.
+
+auth:
+  postgresPassword: ""
+  database: "tatarlang"
+
+image:
+  repository: postgres
+  tag: "15"
+  pullPolicy: IfNotPresent
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: manual
+  hostPath: /data/tataredu/postgres
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi

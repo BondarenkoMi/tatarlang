@@ -51,7 +51,7 @@ HTTPS и сохранения данных после пересоздания p
 
 | Требование | Статус и доказательство |
 |---|---|
-| Собственный чарт из манифестов | Есть `helm/tataredu/Chart.yaml` и `templates/`. |
+| Собственный чарт из манифестов | Есть `.helm/Chart.yaml` и `templates/`. |
 | Values и переиспользование шаблонов | Есть `values.yaml` и `_helpers.tpl`. Часть портов/команд остаётся в шаблонах; при доработке проверим действительно изменяемые настройки. |
 | Зависимости в subcharts | Есть PostgreSQL, RabbitMQ, worker, Flower, Redis, RedisInsight. Исходники уже не игнорируются Git, но ещё не закоммичены. |
 | Проверка шаблонов | В предыдущем этапе прошли lint и рендеринг, проверены ссылки на ресурсы для двух имён релиза. |
@@ -81,7 +81,7 @@ HTTPS и сохранения данных после пересоздания p
 |---|---|
 | RabbitMQ credentials в Vault | Настройка есть в `vault-setup.sh`, ссылки — в `helm/secrets.yaml`. |
 | Отдельная политика RabbitMQ, роль с несколькими политиками | Выполнено: `rabbitmq-policy` отделена, AppRole получает три политики. |
-| Chart Bitnami или Cloud Pirates | Используется собственный `helm/tataredu/charts/rabbitmq`. По уточнению пользователя это допустимо; проверяем работу RabbitMQ, замена чарта не нужна. |
+| Chart Bitnami или Cloud Pirates | Используется собственный `.helm/charts/rabbitmq`. По уточнению пользователя это допустимо; проверяем работу RabbitMQ, замена чарта не нужна. |
 | Username/password через helm-secrets | Проверено настоящим Helm upgrade через AppRole, helm-secrets и vals. |
 | Ingress и LoadBalancer | Есть в локальном RabbitMQ-чарте и root values. |
 | Producer получает credentials из Vault | Есть `backend/producer.py`. |
@@ -134,7 +134,7 @@ HTTPS и сохранения данных после пересоздания p
 | 7.4 | **Выполнено:** Locust Operator 2.3.1 и отдельный chart создают ConfigMap, `LocustTest`, master/worker, Service и Ingress. | `load-test-v2` Running, worker `1/1`, `load-test-v2-webui:8089` имеет endpoint, UI через Ingress отвечает HTTP 200. |
 | 8.1 | **Выполнено:** semantic-release создал GitHub Release `v1.0.1`; workflow собрал Backend и Frontend и опубликовал version/latest теги в GHCR. | Успешный run `35528176864`, тег `v1.0.1`, GitHub Release и container packages. |
 | 8.2 | **Выполнено:** официальный ARC 0.14.2 установлен Helm chart, scale set зарегистрирован для репозитория. | Run `35528398119` успешно выполнен runner `tataredu-runner-9qwvf-runner-trxjs`; временный pod автоматически создан и удалён. |
-| 9 | Структура werf, исходники/Helm submodules, global values, Vault и registry token | Сборка/деплой werf и проверка доступности приложения. Для точного скрипта понадобится упомянутая в ДЗ презентация либо её требования. |
+| 9 | **В работе:** chart перенесён в `.helm`, добавлены `werf.yaml`, `global.werf.images`, vals/Vault и безопасный Docker Hub login; настоящий Vault render прошёл. | Осталось добавить локальный Docker Hub token, выполнить `werf converge` и проверить приложение. |
 | 10 | TruffleHog в CI/pre-commit, Trivy в CI, SonarQube и анализ | Отчёты сканеров и pipeline. Найденные секреты не выводятся в открытые логи. |
 | 11 | Helmfile, Prometheus/Ingress metrics, Loki/Promtail, Grafana/SMTP alert | Запрос nginx-метрик, поиск логов, настроенный alert и проверка уведомления. |
 
@@ -156,8 +156,8 @@ HPA меняет число pod, VPA оценивает ресурсы одно�
 ## Ресурсы ноутбука и локальный сценарий
 
 Измерено: MacBookAir10,1, 8 ГиБ RAM, 8 логических CPU; около 21 ГиБ свободного места
-на разделе проекта. Профиль Minikube: Docker driver, 2 CPU, 3072 MiB в настройках
-профиля; Docker Desktop фактически предоставляет VM около 3,8 ГиБ RAM.
+на разделе проекта. Docker Desktop увеличен до 5 ГиБ RAM, а чистый профиль Minikube
+пересоздан с 4 CPU и 4096 MiB. Узел видит около 4,9 ГиБ с учётом памяти Docker VM.
 Пользователь выбрал локальный Minikube как основной вариант.
 
 После перевода frontend с webpack dev-server на Nginx его production image уменьшился
@@ -181,6 +181,13 @@ backend использовал около 86 MiB. Учебный стенд мо
   [Minikube](https://minikube.sigs.k8s.io/docs/start/). Перед установкой всего набора
   оценим занятую Docker память/диск и подготовим дополнительное свободное место.
 
+После восстановления ДЗ 9 все десять pod приложения и Vault использовали около
+2404 MiB на уровне узла; сумма памяти прикладных контейнеров была около 751 MiB.
+После возврата демонстрационных компонентов ДЗ 7 и ARC controller из ДЗ 8 узел
+использует около 2670 MiB. VPA работает только как один recommender в режиме `Off`,
+Locust ждёт ручного запуска, а ARC держит ноль runner pod между GitHub jobs. Такой
+режим оставляет около 2,2 ГиБ для компактного стека ДЗ 11.
+
 Проведение нагрузки на том же ноутбуке ограничит и сервер, и генератор. Итог ДЗ 7
 будет характеристикой конкретного учебного стенда, а не универсальной оценкой приложения.
 
@@ -190,6 +197,7 @@ backend использовал около 86 MiB. Учебный стенд мо
   и имеющиеся данные Vault. Пароли/unseal keys не нужно отправлять в чат.
 - Для ДЗ 8 — выбор registry и настройка необходимых GitHub/registry credentials
   через локальное окружение или secrets CI; origin уже указывает на GitHub.
-- Для ДЗ 9 — сведения из презентации о требуемом варианте Vault-интеграции.
+- Для завершения ДЗ 9 — Docker Hub username и access token в локальном `helm/.env`;
+  сам токен в чат или Git отправлять не нужно.
 - Для ДЗ 11 — SMTP-провайдер/получатель и токен в локальном секрете, а также решение
   по Promtail/Alloy. Проверка реальной отправки уведомления будет отдельным шагом.

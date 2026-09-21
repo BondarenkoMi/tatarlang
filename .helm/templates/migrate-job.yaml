@@ -1,0 +1,42 @@
+---
+# Job запускается однократно при helm install/upgrade.
+# Применяет Django-миграции к БД перед стартом приложения.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "tataredu.fullname" . }}-migrate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tataredu.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrate.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "tataredu.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        {{- include "tataredu.initWaitPostgres" . | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "tataredu.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          command: ["python", "manage.py", "migrate", "--noinput"]
+          envFrom:
+            {{- include "tataredu.backendEnvFrom" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

@@ -3,7 +3,7 @@ set -euo pipefail
 umask 077
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HELM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-CHART_DIR="$HELM_DIR/tataredu"
+CHART_DIR="$(cd "$HELM_DIR/.." && pwd)/.helm"
 if [ -f "$HELM_DIR/.env" ]; then
   set -a
   source "$HELM_DIR/.env"
@@ -48,7 +48,7 @@ helm dependency build "$CHART_DIR" --skip-refresh
 if [ "$DRY_RUN" = true ]; then
   # helm-secrets передаёт файл backend-у vals и удаляет временную расшифрованную копию.
   helm secrets --backend vals template "$RELEASE_NAME" "$CHART_DIR" \
-    --namespace "$NAMESPACE" -f "$HELM_DIR/secrets.yaml" >/dev/null
+    --namespace "$NAMESPACE" -f "$CHART_DIR/values-common.yaml" -f "$HELM_DIR/secrets.yaml" >/dev/null
   echo "Dry run: helm-secrets + vals получили секреты из Vault и отрендерили chart."
   exit 0
 fi
@@ -65,7 +65,7 @@ fi
 kubectl label namespace "$NAMESPACE" app.kubernetes.io/managed-by=Helm --overwrite
 kubectl annotate namespace "$NAMESPACE" meta.helm.sh/release-name="$RELEASE_NAME" meta.helm.sh/release-namespace="$NAMESPACE" --overwrite
 helm secrets --backend vals upgrade --install "$RELEASE_NAME" "$CHART_DIR" \
-  --namespace "$NAMESPACE" --create-namespace -f "$HELM_DIR/secrets.yaml" \
+  --namespace "$NAMESPACE" --create-namespace -f "$CHART_DIR/values-common.yaml" -f "$HELM_DIR/secrets.yaml" \
   --reset-values --rollback-on-failure --wait --timeout 5m
 
 # envFrom не меняет pod template при обновлении Secret/ConfigMap. Перезапускаем только

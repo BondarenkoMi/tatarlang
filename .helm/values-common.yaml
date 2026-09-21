@@ -1,0 +1,215 @@
+global:
+  postgresHost: "{{ .Release.Name }}-postgresql"
+  rabbitmqHost: "{{ .Release.Name }}-rabbitmq"
+  redisHost: "{{ .Release.Name }}-redis"
+  busybox:
+    repository: busybox
+    tag: "1.36"
+
+image:
+  backend:
+    repository: tataredu/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: tataredu/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  busybox:
+    repository: busybox
+    tag: "1.36"
+
+
+django:
+  debug: "True"
+  allowedHosts: "localhost,127.0.0.1,tataredu.test"
+  secretKey: ""
+
+backend:
+  replicas: 1
+  media:
+    size: 1Gi
+    storageClass: standard
+  resources:
+    requests:
+      cpu: 250m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 60
+    scaleDownStabilizationSeconds: 300
+  vpa:
+
+    enabled: true
+    updateMode: "Off"
+    minAllowedMemory: 64Mi
+    maxAllowedMemory: 512Mi
+
+frontend:
+  replicas: 1
+  nodeEnv: development
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+
+celery:
+  beat:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+
+ingress:
+  enabled: true
+  className: nginx
+  host: tataredu.test
+  tls:
+    enabled: true
+    secretName: tataredu-tls
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+
+migrate:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+
+
+clearsessions:
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+
+externalCache:
+  ttl: 900
+
+
+postgres:
+  user: ""
+  password: ""
+  database: ""
+  port: "5432"
+
+
+# Subcharts
+
+
+# -- PostgreSQL subchart (charts/postgresql/)
+postgresql:
+  auth:
+    postgresPassword: ""
+    database: ""
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+
+
+# -- RabbitMQ subchart (bitnami/rabbitmq)
+rabbitmq:
+  auth:
+    username: ""
+    password: ""
+    erlangCookie: ""
+  service:
+    type: LoadBalancer
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: rabbitmq.tataredu.test
+    path: /
+    pathType: Prefix
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: standard
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+
+# -- Celery Worker subchart (charts/celery-worker/)
+celery-worker:
+  image:
+    repository: tataredu/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  concurrency: 2
+  envFromSecrets:
+    - "{{ .Release.Name }}-secret"
+  envFromConfigMaps:
+    - "{{ .Release.Name }}-config"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# -- Flower subchart (charts/flower/)
+flower:
+  image:
+    repository: tataredu/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 5555
+  envFromSecrets:
+    - "{{ .Release.Name }}-secret"
+  envFromConfigMaps:
+    - "{{ .Release.Name }}-config"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# -- Redis subchart (charts/redis/)
+redis:
+  auth:
+    password: ""
+  service:
+    type: LoadBalancer
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: standard
+
+
+# -- RedisInsight subchart (charts/redisinsight/)
+redisinsight:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: redisinsight.tataredu.test
+    path: /
+    pathType: Prefix
+  persistence:
+    enabled: true
+    size: 512Mi
+    storageClass: standard

@@ -1,0 +1,59 @@
+repositories:
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+
+helmDefaults:
+  wait: true
+  timeout: 600
+  atomic: true
+  cleanupOnFail: true
+
+releases:
+  - name: monitoring-resources
+    namespace: monitoring
+    createNamespace: true
+    chart: ./helm/monitoring-resources
+
+  - name: prometheus
+    namespace: monitoring
+    createNamespace: true
+    chart: prometheus-community/prometheus
+    version: 29.31.1
+    needs:
+      - monitoring/monitoring-resources
+    values:
+      - helm/monitoring/prometheus-values.yaml
+
+  - name: loki
+    namespace: monitoring
+    createNamespace: true
+    chart: grafana/loki
+    version: 7.3.0
+    values:
+      - helm/monitoring/loki-values.yaml
+
+  - name: promtail
+    namespace: monitoring
+    createNamespace: true
+    chart: grafana/promtail
+    version: 6.17.1
+    needs:
+      - monitoring/loki
+    values:
+      - helm/monitoring/promtail-values.yaml
+
+  - name: grafana
+    namespace: monitoring
+    createNamespace: true
+    chart: grafana/grafana
+    version: 10.5.15
+
+
+    needs:
+      - monitoring/prometheus
+      - monitoring/loki
+    values:
+      - helm/monitoring/grafana-values.yaml
+      - helm/monitoring/grafana-smtp-values.yaml.gotmpl

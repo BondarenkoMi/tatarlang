@@ -8,10 +8,13 @@ Enterprise-*.docx
 /.idea
 /.mypy_cache
 backend/media/*
-helm/tataredu/charts/*.tgz
+/.helm/charts/*.tgz
 helm/vault/charts/
 .claude/
-helm/vault/tokens.json
-helm/vault/init-keys.json
+helm/vault/*tokens*.json
+helm/vault/*keys*.json
+helm/secrets.yaml.dec
 k8s/*.local.yaml
 backend/celerybeat-schedule*
+/.helm/values.yaml
+helm/monitoring/.env

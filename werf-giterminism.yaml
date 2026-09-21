@@ -1,0 +1,7 @@
+giterminismConfigVersion: 1
+
+# values.yaml is generated locally from Vault immediately before render/converge
+# and is deleted by the deploy script. No other uncommitted Helm files are allowed.
+helm:
+  allowUncommittedFiles:
+    - .helm/values.yaml
