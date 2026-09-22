@@ -58,10 +58,23 @@ spec:
             - configMapRef:
                 name: {{ tpl . $ }}
             {{- end }}
+          startupProbe:
+            tcpSocket:
+              port: {{ .Values.port }}
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 36
           readinessProbe:
             tcpSocket:
               port: {{ .Values.port }}
-            initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.port }}
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
