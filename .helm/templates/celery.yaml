@@ -1,3 +1,4 @@
+{{- if .Values.celery.beat.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,3 +40,4 @@ spec:
             {{- include "tataredu.backendEnvFrom" . | nindent 12 }}
           resources:
             {{- toYaml .Values.celery.beat.resources | nindent 12 }}
+{{- end }}

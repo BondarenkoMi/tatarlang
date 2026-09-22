@@ -17,5 +17,5 @@ dependencies:
 - name: redisinsight
   repository: file://charts/redisinsight
   version: 0.1.0
-digest: sha256:bc498b0aa7f9ee0e6134da541b150ea13e94223483dd8954245d678edfcf5dbd
-generated: "2026-02-26T20:49:11.24728+03:00"
+digest: sha256:219da15250b51fbb48d6349438833d268b4982ca62dd3c07207c91ce2f9835b2
+generated: "2026-09-22T03:43:18.307641+03:00"

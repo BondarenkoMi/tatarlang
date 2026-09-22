@@ -19,6 +19,7 @@ fi
 NAMESPACE="${NAMESPACE:-tataredu}"
 RELEASE_NAME="${RELEASE_NAME:-tataredu}"
 WERF_ENV="${WERF_ENV:-local}"
+DEMO_MODE="${DEMO_MODE:-false}"
 export VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
 VAULT_NAMESPACE="${VAULT_NAMESPACE:-tataredu}"
 VAULT_SERVICE="${VAULT_SERVICE:-vault}"
@@ -71,6 +72,15 @@ fi
 mv "$TEMP_VALUES" "$GENERATED_VALUES"
 TEMP_VALUES=""
 
+HELM_VALUES=(
+  --values "$CHART_DIR/values-common.yaml"
+)
+if [ "$DEMO_MODE" = true ]; then
+  HELM_VALUES+=(--values "$CHART_DIR/values-demo.yaml")
+  echo "Demo profile: Flower, Celery worker/beat and RedisInsight are disabled."
+fi
+HELM_VALUES+=(--values "$GENERATED_VALUES")
+
 cd "$PROJECT_DIR"
 if [ "$MODE" = render ]; then
   werf render \
@@ -79,8 +89,7 @@ if [ "$MODE" = render ]; then
     --env "$WERF_ENV" \
     --release "$RELEASE_NAME" \
     --namespace "$NAMESPACE" \
-    --values "$CHART_DIR/values-common.yaml" \
-    --values "$GENERATED_VALUES" >/dev/null
+    "${HELM_VALUES[@]}" >/dev/null
   echo "Render успешен; временный .helm/values.yaml будет удалён."
   exit 0
 fi
@@ -101,8 +110,7 @@ werf converge \
   --env "$WERF_ENV" \
   --release "$RELEASE_NAME" \
   --namespace "$NAMESPACE" \
-  --values "$CHART_DIR/values-common.yaml" \
-  --values "$GENERATED_VALUES" \
+  "${HELM_VALUES[@]}" \
   --auto-rollback \
   --timeout 600
 

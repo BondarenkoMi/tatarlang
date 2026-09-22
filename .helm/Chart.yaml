@@ -23,12 +23,15 @@ dependencies:
   - name: celery-worker
     version: "0.1.0"
     repository: "file://charts/celery-worker"
+    condition: celery-worker.enabled
   - name: flower
     version: "0.1.0"
     repository: "file://charts/flower"
+    condition: flower.enabled
   - name: redis
     version: "0.1.0"
     repository: "file://charts/redis"
   - name: redisinsight
     version: "0.1.0"
     repository: "file://charts/redisinsight"
+    condition: redisinsight.enabled

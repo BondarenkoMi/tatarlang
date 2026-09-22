@@ -1,0 +1,15 @@
+# Lightweight profile for a laptop demonstration of homework 7, 8, 9 and 11.
+# Background task processing is not used in these scenarios, so its UI and
+# workers are disabled. Redis and RabbitMQ remain available to the backend.
+celery:
+  beat:
+    enabled: false
+
+celery-worker:
+  enabled: false
+
+flower:
+  enabled: false
+
+redisinsight:
+  enabled: false

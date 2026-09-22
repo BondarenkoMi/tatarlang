@@ -65,6 +65,7 @@ frontend:
 
 celery:
   beat:
+    enabled: true
     replicas: 1
     resources:
       requests:
@@ -151,6 +152,7 @@ rabbitmq:
 
 # -- Celery Worker subchart (charts/celery-worker/)
 celery-worker:
+  enabled: true
   image:
     repository: tataredu/backend
     tag: latest
@@ -171,6 +173,7 @@ celery-worker:
 
 # -- Flower subchart (charts/flower/)
 flower:
+  enabled: true
   image:
     repository: tataredu/backend
     tag: latest
@@ -203,6 +206,7 @@ redis:
 
 # -- RedisInsight subchart (charts/redisinsight/)
 redisinsight:
+  enabled: true
   ingress:
     enabled: true
     ingressClassName: nginx
