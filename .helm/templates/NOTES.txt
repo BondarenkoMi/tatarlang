@@ -16,7 +16,9 @@ Namespace: {{ .Release.Namespace }}
    Frontend:  https://{{ .Values.ingress.host }}
    API:       https://{{ .Values.ingress.host }}/api/v1/
    Swagger:   https://{{ .Values.ingress.host }}/swagger/
+{{- if .Values.flower.enabled }}
    Flower:    https://{{ .Values.ingress.host }}/flower
+{{- end }}
 
 === Полезные команды ===
 
@@ -26,8 +28,10 @@ kubectl get pods -n {{ .Release.Namespace }}
 # Логи backend:
 kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=backend -f
 
+{{- if (index .Values "celery-worker").enabled }}
 # Логи celery-worker:
 kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=celery-worker -f
+{{- end }}
 
 # Обновить релиз:
 bash helm/scripts/deploy.sh

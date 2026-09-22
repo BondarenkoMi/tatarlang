@@ -140,6 +140,11 @@ bash helm/scripts/werf-deploy.sh --render-only
 
 # Собрать образы, отправить их в Docker Hub и обновить приложение:
 bash helm/scripts/werf-deploy.sh
+
+# Облегчённый режим для одновременного показа ДЗ 7, 8, 9 и 11:
+# отключает Flower, Celery worker/beat и RedisInsight, но сохраняет само приложение,
+# Redis, RabbitMQ, Vault, Locust, ARC и весь стек мониторинга.
+DEMO_MODE=true bash helm/scripts/werf-deploy.sh
 ```
 
 ## ДЗ 11 — Prometheus, Loki и Grafana
