@@ -65,6 +65,24 @@ kubectl exec -n tataredu deployment/tataredu-backend -- \
   python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/swagger/').status)"
 ```
 
+## Демонстрационные данные
+
+После пересоздания PostgreSQL создать или обновить 5 курсов и 5 тестов:
+
+```bash
+kubectl exec -n tataredu deployment/tataredu-backend -- python manage.py seed_demo
+```
+
+Дополнительно получить актуальные мероприятия через парсер Яндекс Афиши:
+
+```bash
+kubectl exec -n tataredu deployment/tataredu-backend -- \
+  python manage.py seed_demo --with-events
+```
+
+Команда идемпотентна: курсы и тесты с теми же названиями обновляются, а не
+дублируются. Парсер зависит от доступности и текущей разметки внешнего сайта.
+
 ## ДЗ 7 — масштабирование и Locust
 
 ```bash
@@ -80,6 +98,14 @@ kubectl get jobs,pods,svc,ingress -n tataredu | grep load-test-v2
 
 Web UI нагрузочного теста: `http://locust.tataredu.test`. Для него нужны запись
 `127.0.0.1 locust.tataredu.test` в `/etc/hosts` и запущенный `minikube tunnel`.
+В поле **Host** должен быть внутренний адрес backend-сервиса:
+
+```text
+http://tataredu-backend:8000
+```
+
+`tataredu.test` из Locust pod использовать нельзя: запись `/etc/hosts` компьютера
+в pod не передаётся, и тест может обратиться к `127.0.0.1` самого worker.
 
 ## Остановка
 

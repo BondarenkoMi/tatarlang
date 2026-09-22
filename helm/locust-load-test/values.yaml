@@ -6,25 +6,18 @@ image:
   pullPolicy: IfNotPresent
 
 target:
+  # Use Kubernetes service DNS: /etc/hosts entries from the laptop are not
+  # available inside Locust pods.
   host: http://tataredu-backend:8000
 
 test:
   users: 100
   spawnRate: 20
   runTime: 2m
-  workers: 1
+  workers: 2
   autostart: false
 
 master:
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 300m
-      memory: 256Mi
-
-worker:
   resources:
     requests:
       cpu: 100m
@@ -32,6 +25,15 @@ worker:
     limits:
       cpu: 500m
       memory: 256Mi
+
+worker:
+  resources:
+    requests:
+      cpu: 150m
+      memory: 128Mi
+    limits:
+      cpu: 750m
+      memory: 384Mi
 
 ingress:
   enabled: true
